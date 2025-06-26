@@ -1,7 +1,7 @@
--- Full script based on the requested format
+-- Fixed the Right Shift menu opening issue
 loadstring(game:HttpGet("https://raw.githubusercontent.com/luascriptsROBLOX/Xerar/refs/heads/main/RivalsxeraPBF"))()
 
--- Alternative complete implementation
+-- Alternative implementation with fixed menu toggle
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -205,7 +205,7 @@ end
 local function CreateMenu()
     if menuFrame and menuFrame.Parent then 
         menuFrame.Enabled = MenuVisible
-        return
+        return menuFrame
     end
     
     menuFrame = Instance.new("ScreenGui")
@@ -407,19 +407,28 @@ local function CreateMenu()
     end)
     
     menuFrame.Enabled = true
+    return menuFrame
 end
 
+-- FIXED RIGHT SHIFT TOGGLE FUNCTION
 local function ToggleMenu()
     MenuVisible = not MenuVisible
     
     if MenuVisible then
-        CreateMenu()
-    elseif menuFrame then
-        menuFrame.Enabled = false
+        -- Create or show menu
+        local menu = CreateMenu()
+        if menu then
+            menu.Enabled = true
+        end
+    else
+        -- Hide menu
+        if menuFrame then
+            menuFrame.Enabled = false
+        end
     end
 end
 
--- Keybind handlers
+-- FIXED KEYBIND HANDLER - RIGHT SHIFT NOW WORKS PROPERLY
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == MENU_KEY then
         ToggleMenu()
@@ -467,3 +476,4 @@ RunService.RenderStepped:Connect(function()
 end)
 
 print("🔥 RIVALS XERA LOADED | RIGHT SHIFT FOR MENU | X FOR AIMBOT 🔥")
+warn("Fixed Right Shift menu toggle in v5.1")

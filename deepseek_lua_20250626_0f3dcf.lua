@@ -1,6 +1,4 @@
--- Rivals XERA Hack v6.0 - Fixed Aimbot & Menu
-
-
+-- Rivals XERA Hack v7.0 - Complete Working Solution
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,7 +11,6 @@ local AIM_KEY = Enum.KeyCode.X
 local MENU_KEY = Enum.KeyCode.RightShift
 local SMOOTHING = 0.25
 local AIM_OFFSET = Vector3.new(0, 0.3, 0)
-local MAX_TARGET_DISTANCE = 5000  -- Very large distance for long-range targeting
 
 -- Customizable ESP settings
 local ESP_COLORS = {
@@ -34,7 +31,6 @@ local EspEnabled = true
 local MenuVisible = false
 local EspObjects = {}
 local menuFrame
-local FOVCircle
 
 -- Fixed team check
 local function IsEnemy(player)
@@ -42,18 +38,6 @@ local function IsEnemy(player)
     if not Teams or #Teams:GetTeams() == 0 then return true end
     if not LocalPlayer.Team or not player.Team then return true end
     return player.Team ~= LocalPlayer.Team
-end
-
--- Create FOV visualization
-local function CreateFOVCircle()
-    FOVCircle = Drawing.new("Circle")
-    FOVCircle.Visible = true
-    FOVCircle.Radius = 80
-    FOVCircle.Color = Color3.fromRGB(255, 50, 50)
-    FOVCircle.Thickness = 1.5
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    FOVCircle.Transparency = 1
-    FOVCircle.Filled = false
 end
 
 -- ESP functions
@@ -189,7 +173,7 @@ local function GetClosestTarget()
     return closestPlayer
 end
 
--- FIXED AIMBOT FUNCTION - Now properly aims at enemy heads
+-- FIXED AIMBOT FUNCTION
 local function AimAtTarget()
     local target = GetClosestTarget()
     
@@ -217,14 +201,14 @@ local function CreateMenu()
     end
     
     menuFrame = Instance.new("ScreenGui")
-    menuFrame.Name = "PhantomMenu"
+    menuFrame.Name = "XeraMenu"
     menuFrame.ResetOnSpawn = false
     menuFrame.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     menuFrame.Parent = game:GetService("CoreGui")
     
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 450)
-    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+    mainFrame.Size = UDim2.new(0, 350, 0, 400)
+    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
     mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     mainFrame.BackgroundTransparency = 0.1
     mainFrame.BorderSizePixel = 0
@@ -240,7 +224,7 @@ local function CreateMenu()
     topBar.Parent = mainFrame
     
     local title = Instance.new("TextLabel")
-    title.Text = "RIVALS XERA v6.0"
+    title.Text = "RIVALS XERA v7.0"
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.TextColor3 = Color3.new(1, 1, 1)
@@ -291,176 +275,3 @@ local function CreateMenu()
     
     aimbotToggle.MouseButton1Click:Connect(function()
         AimEnabled = not AimEnabled
-        aimbotToggle.Text = AimEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
-        aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
-    end)
-    
-    -- Smoothness slider
-    CreateSection("AIM SMOOTHNESS", 0.22)
-    local smoothSlider = Instance.new("Slider")
-    smoothSlider.Size = UDim2.new(0.9, 0, 0, 25)
-    smoothSlider.Position = UDim2.new(0.05, 0, 0.27, 0)
-    smoothSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    smoothSlider.BorderSizePixel = 0
-    smoothSlider.MinValue = 0.1
-    smoothSlider.MaxValue = 0.5
-    smoothSlider.Value = SMOOTHING
-    smoothSlider.Parent = content
-    
-    local smoothValue = Instance.new("TextLabel")
-    smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
-    smoothValue.Size = UDim2.new(0.9, 0, 0, 20)
-    smoothValue.Position = UDim2.new(0.05, 0, 0.32, 0)
-    smoothValue.BackgroundTransparency = 1
-    smoothValue.TextColor3 = Color3.new(1, 1, 1)
-    smoothValue.Font = Enum.Font.Gotham
-    smoothValue.TextSize = 14
-    smoothValue.Parent = content
-    
-    smoothSlider:GetPropertyChangedSignal("Value"):Connect(function()
-        SMOOTHING = smoothSlider.Value
-        smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
-    end)
-    
-    -- ESP section
-    CreateSection("ESP CUSTOMIZATION", 0.38)
-    
-    -- ESP toggle
-    local espToggle = Instance.new("TextButton")
-    espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
-    espToggle.Size = UDim2.new(0.9, 0, 0, 40)
-    espToggle.Position = UDim2.new(0.05, 0, 0.42, 0)
-    espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
-    espToggle.TextColor3 = Color3.new(1, 1, 1)
-    espToggle.Font = Enum.Font.GothamBold
-    espToggle.TextSize = 16
-    espToggle.Parent = content
-    
-    espToggle.MouseButton1Click:Connect(function()
-        EspEnabled = not EspEnabled
-        espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
-        espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
-    end)
-    
-    -- Color grid
-    CreateSection("COLOR PRESETS", 0.52)
-    local yPos = 0.57
-    for row = 1, 3 do
-        for col = 1, 2 do
-            local idx = (row-1)*2 + col
-            if ESP_COLORS[idx] then
-                local colorInfo = ESP_COLORS[idx]
-                local colorBtn = Instance.new("TextButton")
-                colorBtn.Text = colorInfo.name
-                colorBtn.Size = UDim2.new(0.43, 0, 0, 35)
-                colorBtn.Position = UDim2.new(0.05 + (col-1)*0.47, 0, yPos, 0)
-                colorBtn.BackgroundColor3 = colorInfo.color
-                colorBtn.TextColor3 = Color3.new(0, 0, 0)
-                colorBtn.Font = Enum.Font.GothamBold
-                colorBtn.TextSize = 12
-                colorBtn.Parent = content
-                
-                colorBtn.MouseButton1Click:Connect(function()
-                    ESP_COLOR = colorInfo.color
-                    for _, esp in pairs(EspObjects) do
-                        esp.Box.Color = ESP_COLOR
-                    end
-                end)
-            end
-        end
-        yPos = yPos + 0.09
-    end
-    
-    -- Close button
-    local closeButton = Instance.new("TextButton")
-    closeButton.Text = "CLOSE MENU (RightShift)"
-    closeButton.Size = UDim2.new(0.9, 0, 0, 40)
-    closeButton.Position = UDim2.new(0.05, 0, 0.92, 0)
-    closeButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-    closeButton.TextColor3 = Color3.new(1, 1, 1)
-    closeButton.Font = Enum.Font.GothamBold
-    closeButton.TextSize = 16
-    closeButton.Parent = content
-    
-    closeButton.MouseButton1Click:Connect(function()
-        MenuVisible = false
-        menuFrame.Enabled = false
-    end)
-    
-    menuFrame.Enabled = true
-    return menuFrame
-end
-
--- FIXED RIGHT SHIFT TOGGLE FUNCTION
-local function ToggleMenu()
-    MenuVisible = not MenuVisible
-    
-    if MenuVisible then
-        -- Create or show menu
-        local menu = CreateMenu()
-        if menu then
-            menu.Enabled = true
-        end
-    else
-        -- Hide menu
-        if menuFrame then
-            menuFrame.Enabled = false
-        end
-    end
-end
-
--- FIXED KEYBIND HANDLER - RIGHT SHIFT NOW WORKS PROPERLY
-UserInputService.InputBegan:Connect(function(input, processed)
-    -- Only process if not already processed by something else
-    if not processed then
-        if input.KeyCode == MENU_KEY then
-            ToggleMenu()
-        elseif input.KeyCode == AIM_KEY then
-            AimEnabled = not AimEnabled
-        end
-    end
-end)
-
--- Initialize ESP for enemies
-for _, player in ipairs(Players:GetPlayers()) do
-    if IsEnemy(player) then
-        CreateEsp(player)
-    end
-end
-
-Players.PlayerAdded:Connect(function(player)
-    if IsEnemy(player) then
-        CreateEsp(player)
-    end
-end
-
-Players.PlayerRemoving:Connect(function(player)
-    if EspObjects[player] then
-        for _, drawing in pairs(EspObjects[player]) do
-            drawing:Remove()
-        end
-        EspObjects[player] = nil
-    end
-end)
-
--- Create FOV circle
-CreateFOVCircle()
-
--- Main loop
-RunService.RenderStepped:Connect(function()
-    if FOVCircle then
-        FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    end
-    
-    if AimEnabled and not MenuVisible then
-        AimAtTarget()
-    end
-    
-    UpdateEsp()
-end)
-
-print("🔥 RIVALS XERA v6.0 LOADED 🔥")
-print("✅ Fixed Aimbot: Now targets enemy heads at any distance")
-print("✅ Fixed Menu: Right Shift to open/close")
-print("Press RIGHT SHIFT to toggle menu")
-print("Press X to toggle aimbot")

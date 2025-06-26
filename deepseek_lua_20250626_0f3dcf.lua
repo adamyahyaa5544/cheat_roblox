@@ -1,168 +1,140 @@
--- 🔥 PHANTOM RIVALS ULTIMATE v4.0 🔥
--- The definitive ESP + Aimbot + Menu solution for Roblox Rivals
--- Restored to original v4.0 with all fixes applied
+-- Roblox Rivals ESP & Aimbot
+-- Press RightShift to toggle menu
+-- WARNING: This script violates Roblox ToS
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local Teams = game:GetService("Teams")
 local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
 
 -- Configuration
-local AIM_KEY = Enum.KeyCode.X
-local MENU_KEY = Enum.KeyCode.RightShift
-local SMOOTHING = 0.25
-local AIM_OFFSET = Vector3.new(0, 0.3, 0)
+local ESP_COLOR = Color3.fromRGB(255, 0, 0)  -- Default red
+local TEAM_CHECK = true
+local AIMBOT_KEY = Enum.UserInputType.MouseButton2  -- Right mouse
+local HEADSHOT_MODE = true
+local FOV = 120  -- Aim field of view
 
--- Customizable ESP settings
-local ESP_COLORS = {
-    {name = "NEON RED", color = Color3.fromRGB(255, 50, 50)},
-    {name = "ELECTRIC BLUE", color = Color3.fromRGB(0, 150, 255)},
-    {name = "ACID GREEN", color = Color3.fromRGB(50, 255, 100)},
-    {name = "HOT PINK", color = Color3.fromRGB(255, 50, 150)},
-    {name = "PURPLE HAZE", color = Color3.fromRGB(180, 80, 255)},
-    {name = "GOLDEN", color = Color3.fromRGB(255, 215, 0)}
-}
-local ESP_COLOR = ESP_COLORS[1].color
-local SHOW_NAMES = true
-local SHOW_HEALTH = true
+-- ESP Storage
+local ESPBoxes = {}
+local ESPTexts = {}
+local ESPConnections = {}
 
--- State variables
-local AimEnabled = false
-local EspEnabled = true
-local MenuVisible = false
-local EspObjects = {}
-local menuFrame
+-- Menu GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local ColorPicker = Instance.new("TextBox")
+local TeamToggle = Instance.new("TextButton")
+local HeadshotToggle = Instance.new("TextButton")
+local FOVSlider = Instance.new("TextButton")
 
--- Fixed team check
-local function IsEnemy(player)
-    if player == LocalPlayer then return false end
-    if not Teams or #Teams:GetTeams() == 0 then return true end
-    if not LocalPlayer.Team or not player.Team then return true end
-    return player.Team ~= LocalPlayer.Team
+-- Initialize UI
+function initUI()
+    ScreenGui.Parent = game.CoreGui
+    ScreenGui.Name = "CheatMenu"
+    
+    Frame.Size = UDim2.new(0, 200, 0, 150)
+    Frame.Position = UDim2.new(0.5, -100, 0.5, -75)
+    Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Frame.Parent = ScreenGui
+    Frame.Visible = false
+    
+    ColorPicker.PlaceholderText = "ESP Color (R,G,B)"
+    ColorPicker.Size = UDim2.new(0.8, 0, 0, 25)
+    ColorPicker.Position = UDim2.new(0.1, 0, 0.1, 0)
+    ColorPicker.Parent = Frame
+    
+    TeamToggle.Text = "Team Check: ON"
+    TeamToggle.Size = UDim2.new(0.8, 0, 0, 25)
+    TeamToggle.Position = UDim2.new(0.1, 0, 0.3, 0)
+    TeamToggle.Parent = Frame
+    
+    HeadshotToggle.Text = "Headshot: ON"
+    HeadshotToggle.Size = UDim2.new(0.8, 0, 0, 25)
+    HeadshotToggle.Position = UDim2.new(0.1, 0, 0.5, 0)
+    HeadshotToggle.Parent = Frame
+    
+    FOVSlider.Text = "FOV: " .. FOV
+    FOVSlider.Size = UDim2.new(0.8, 0, 0, 25)
+    FOVSlider.Position = UDim2.new(0.1, 0, 0.7, 0)
+    FOVSlider.Parent = Frame
 end
 
--- ESP functions
-local function CreateEsp(player)
+-- Update ESP color
+function updateColor()
+    local r, g, b = ESP_COLOR.r * 255, ESP_COLOR.g * 255, ESP_COLOR.b * 255
+    ColorPicker.Text = string.format("%d,%d,%d", r, g, b)
+end
+
+-- Create ESP box
+function createESP(player)
     local Box = Drawing.new("Square")
     Box.Visible = false
     Box.Color = ESP_COLOR
     Box.Thickness = 2
     Box.Filled = false
     
-    local NameTag = Drawing.new("Text")
-    NameTag.Visible = false
-    NameTag.Color = Color3.new(1, 1, 1)
-    NameTag.Size = 16
-    NameTag.Center = true
-    NameTag.Outline = true
-    NameTag.OutlineColor = Color3.new(0, 0, 0)
+    local Text = Drawing.new("Text")
+    Text.Visible = false
+    Text.Color = ESP_COLOR
+    Text.Size = 18
+    Text.Center = true
     
-    local HealthBar = Drawing.new("Square")
-    HealthBar.Visible = false
-    HealthBar.Filled = true
-    HealthBar.Thickness = 1
-    
-    local HealthBarBackground = Drawing.new("Square")
-    HealthBarBackground.Visible = false
-    HealthBarBackground.Filled = true
-    HealthBarBackground.Color = Color3.new(0.2, 0.2, 0.2)
-    HealthBarBackground.Thickness = 1
-    
-    EspObjects[player] = {
-        Box = Box,
-        NameTag = NameTag,
-        HealthBar = HealthBar,
-        HealthBarBackground = HealthBarBackground
-    }
+    ESPBoxes[player] = Box
+    ESPTexts[player] = Text
 end
 
-local function UpdateEsp()
-    for player, drawings in pairs(EspObjects) do
-        if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            local head = player.Character:FindFirstChild("Head")
-            local humanoid = player.Character:FindFirstChild("Humanoid")
+-- Update ESP
+function updateESP()
+    for player, box in pairs(ESPBoxes) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            local rootPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
             
-            if rootPart and head and humanoid then
-                local rootPos, rootVis = Camera:WorldToViewportPoint(rootPart.Position)
-                local headPos, headVis = Camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local headPos = Camera:WorldToViewportPoint(player.Character.Head.Position)
+                local scale = (rootPos - headPos).Magnitude * 2
                 
-                if rootVis then
-                    local height = (headPos.Y - rootPos.Y) * 2.2
-                    local width = height * 0.6
-                    local boxX = rootPos.X - width/2
-                    local boxY = rootPos.Y - height/2
-                    
-                    drawings.Box.Size = Vector2.new(width, height)
-                    drawings.Box.Position = Vector2.new(boxX, boxY)
-                    drawings.Box.Visible = EspEnabled
-                    drawings.Box.Color = ESP_COLOR
-                    
-                    if SHOW_NAMES then
-                        local distance = (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
-                        drawings.NameTag.Text = string.format("%s [%d]", player.Name, math.floor(distance))
-                        drawings.NameTag.Position = Vector2.new(headPos.X, headPos.Y - 25)
-                        drawings.NameTag.Visible = EspEnabled
-                    else
-                        drawings.NameTag.Visible = false
-                    end
-                    
-                    if SHOW_HEALTH then
-                        local healthPercent = humanoid.Health / humanoid.MaxHealth
-                        local barHeight = height
-                        local barWidth = 4
-                        local barX = boxX - barWidth - 2
-                        local barY = boxY
-                        
-                        drawings.HealthBarBackground.Size = Vector2.new(barWidth, barHeight)
-                        drawings.HealthBarBackground.Position = Vector2.new(barX, barY)
-                        drawings.HealthBarBackground.Visible = EspEnabled
-                        
-                        local healthHeight = barHeight * healthPercent
-                        drawings.HealthBar.Size = Vector2.new(barWidth, healthHeight)
-                        drawings.HealthBar.Position = Vector2.new(barX, barY + (barHeight - healthHeight))
-                        drawings.HealthBar.Color = Color3.new(1 - healthPercent, healthPercent, 0)
-                        drawings.HealthBar.Visible = EspEnabled
-                    else
-                        drawings.HealthBar.Visible = false
-                        drawings.HealthBarBackground.Visible = false
-                    end
-                else
-                    drawings.Box.Visible = false
-                    drawings.NameTag.Visible = false
-                    drawings.HealthBar.Visible = false
-                    drawings.HealthBarBackground.Visible = false
-                end
+                box.Size = Vector2.new(scale, scale * 1.5)
+                box.Position = Vector2.new(rootPos.X - scale/2, rootPos.Y - scale/2)
+                box.Visible = true
+                
+                ESPTexts[player].Position = Vector2.new(rootPos.X, rootPos.Y - scale)
+                ESPTexts[player].Text = player.Name
+                ESPTexts[player].Visible = true
+            else
+                box.Visible = false
+                ESPTexts[player].Visible = false
             end
         else
-            drawings.Box.Visible = false
-            drawings.NameTag.Visible = false
-            drawings.HealthBar.Visible = false
-            drawings.HealthBarBackground.Visible = false
+            box.Visible = false
+            ESPTexts[player].Visible = false
         end
     end
 end
 
--- Precision head tracking aimbot - FIXED
-local function GetClosestTarget()
+-- Find target for aimbot
+function findTarget()
     local closestPlayer = nil
-    local closestDistance = math.huge
-    local cameraPos = Camera.CFrame.Position
+    local closestDistance = FOV
     
-    for _, player in ipairs(Players:GetPlayers()) do
-        if not IsEnemy(player) then continue end
-        if not player.Character then continue end
-        if not player.Character:FindFirstChild("Humanoid") then continue end
-        if player.Character.Humanoid.Health <= 0 then continue end
-        
-        local head = player.Character:FindFirstChild("Head")
-        if head then
-            local distance = (cameraPos - head.Position).Magnitude
-            if distance < closestDistance then
-                closestDistance = distance
-                closestPlayer = player
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if TEAM_CHECK and player.Team == LocalPlayer.Team then continue end
+            
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            local head = player.Character:FindFirstChild("Head")
+            
+            if humanoid and humanoid.Health > 0 and head then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                local mousePos = Vector2.new(Mouse.X, Mouse.Y)
+                local offset = Vector2.new(screenPos.X, screenPos.Y) - mousePos
+                local distance = offset.Magnitude
+                
+                if distance < closestDistance and onScreen then
+                    closestDistance = distance
+                    closestPlayer = player
+                end
             end
         end
     end
@@ -170,267 +142,78 @@ local function GetClosestTarget()
     return closestPlayer
 end
 
-local function AimAtTarget()
-    local target = GetClosestTarget()
+-- Aimbot function
+function aimAtTarget(target)
+    if not target or not target.Character then return end
     
-    if target and target.Character then
-        local head = target.Character:FindFirstChild("Head")
-        if head then
-            local cameraCF = Camera.CFrame
-            local targetPosition = head.Position + AIM_OFFSET
-            
-            local direction = (targetPosition - cameraCF.Position).Unit
-            local newLookVector = cameraCF.LookVector:Lerp(direction, SMOOTHING)
-            
-            Camera.CFrame = CFrame.new(cameraCF.Position, cameraCF.Position + newLookVector)
-        end
-    end
+    local targetPart = HEADSHOT_MODE and target.Character.Head or target.Character.HumanoidRootPart
+    if not targetPart then return end
+    
+    Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
 end
 
--- Menu System - FIXED
-local function CreateMenu()
-    if menuFrame then 
-        menuFrame.Enabled = MenuVisible
-        return menuFrame
-    end
-    
-    menuFrame = Instance.new("ScreenGui")
-    menuFrame.Name = "PhantomMenu"
-    menuFrame.ResetOnSpawn = false
-    menuFrame.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    menuFrame.Parent = game:GetService("CoreGui")
-    
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 400)
-    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    mainFrame.BackgroundTransparency = 0.1
-    mainFrame.BorderSizePixel = 0
-    mainFrame.ClipsDescendants = true
-    mainFrame.Parent = menuFrame
-    
-    -- Top bar
-    local topBar = Instance.new("Frame")
-    topBar.Size = UDim2.new(1, 0, 0, 40)
-    topBar.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-    topBar.BorderSizePixel = 0
-    topBar.ZIndex = 2
-    topBar.Parent = mainFrame
-    
-    local title = Instance.new("TextLabel")
-    title.Text = "PHANTOM RIVALS v4.0"
-    title.Size = UDim2.new(1, 0, 1, 0)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = Color3.new(1, 1, 1)
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 20
-    title.Parent = topBar
-    
-    -- Menu content
-    local content = Instance.new("Frame")
-    content.Size = UDim2.new(1, 0, 1, -40)
-    content.Position = UDim2.new(0, 0, 0, 40)
-    content.BackgroundTransparency = 1
-    content.Parent = mainFrame
-    
-    -- Menu sections
-    local function CreateSection(titleText, yPosition)
-        local section = Instance.new("Frame")
-        section.Size = UDim2.new(0.9, 0, 0, 30)
-        section.Position = UDim2.new(0.05, 0, yPosition, 0)
-        section.BackgroundTransparency = 1
-        section.Parent = content
-        
-        local label = Instance.new("TextLabel")
-        label.Text = titleText
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Color3.new(0.9, 0.9, 0.9)
-        label.Font = Enum.Font.GothamBold
-        label.TextSize = 18
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = section
-        
-        return section
-    end
-    
-    -- Aimbot section
-    CreateSection("AIMBOT SETTINGS", 0.02)
-    
-    local aimbotToggle = Instance.new("TextButton")
-    aimbotToggle.Text = AimEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
-    aimbotToggle.Size = UDim2.new(0.9, 0, 0, 40)
-    aimbotToggle.Position = UDim2.new(0.05, 0, 0.08, 0)
-    aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
-    aimbotToggle.TextColor3 = Color3.new(1, 1, 1)
-    aimbotToggle.Font = Enum.Font.GothamBold
-    aimbotToggle.TextSize = 16
-    aimbotToggle.Parent = content
-    
-    aimbotToggle.MouseButton1Click:Connect(function()
-        AimEnabled = not AimEnabled
-        aimbotToggle.Text = AimEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
-        aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
-    end)
-    
-    -- Smoothness slider
-    CreateSection("AIM SMOOTHNESS", 0.22)
-    local smoothSlider = Instance.new("Slider")
-    smoothSlider.Size = UDim2.new(0.9, 0, 0, 25)
-    smoothSlider.Position = UDim2.new(0.05, 0, 0.27, 0)
-    smoothSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    smoothSlider.BorderSizePixel = 0
-    smoothSlider.MinValue = 0.1
-    smoothSlider.MaxValue = 0.5
-    smoothSlider.Value = SMOOTHING
-    smoothSlider.Parent = content
-    
-    local smoothValue = Instance.new("TextLabel")
-    smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
-    smoothValue.Size = UDim2.new(0.9, 0, 0, 20)
-    smoothValue.Position = UDim2.new(0.05, 0, 0.32, 0)
-    smoothValue.BackgroundTransparency = 1
-    smoothValue.TextColor3 = Color3.new(1, 1, 1)
-    smoothValue.Font = Enum.Font.Gotham
-    smoothValue.TextSize = 14
-    smoothValue.Parent = content
-    
-    smoothSlider:GetPropertyChangedSignal("Value"):Connect(function()
-        SMOOTHING = smoothSlider.Value
-        smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
-    end)
-    
-    -- ESP section
-    CreateSection("ESP CUSTOMIZATION", 0.38)
-    
-    -- ESP toggle
-    local espToggle = Instance.new("TextButton")
-    espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
-    espToggle.Size = UDim2.new(0.9, 0, 0, 40)
-    espToggle.Position = UDim2.new(0.05, 0, 0.42, 0)
-    espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
-    espToggle.TextColor3 = Color3.new(1, 1, 1)
-    espToggle.Font = Enum.Font.GothamBold
-    espToggle.TextSize = 16
-    espToggle.Parent = content
-    
-    espToggle.MouseButton1Click:Connect(function()
-        EspEnabled = not EspEnabled
-        espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
-        espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
-    end)
-    
-    -- Color grid
-    CreateSection("COLOR PRESETS", 0.52)
-    local yPos = 0.57
-    for row = 1, 3 do
-        for col = 1, 2 do
-            local idx = (row-1)*2 + col
-            if ESP_COLORS[idx] then
-                local colorInfo = ESP_COLORS[idx]
-                local colorBtn = Instance.new("TextButton")
-                colorBtn.Text = colorInfo.name
-                colorBtn.Size = UDim2.new(0.43, 0, 0, 35)
-                colorBtn.Position = UDim2.new(0.05 + (col-1)*0.47, 0, yPos, 0)
-                colorBtn.BackgroundColor3 = colorInfo.color
-                colorBtn.TextColor3 = Color3.new(0, 0, 0)
-                colorBtn.Font = Enum.Font.GothamBold
-                colorBtn.TextSize = 12
-                colorBtn.Parent = content
-                
-                colorBtn.MouseButton1Click:Connect(function()
-                    ESP_COLOR = colorInfo.color
-                    for _, esp in pairs(EspObjects) do
-                        esp.Box.Color = ESP_COLOR
-                    end
-                end)
-            end
-        end
-        yPos = yPos + 0.09
-    end
-    
-    -- Close button
-    local closeButton = Instance.new("TextButton")
-    closeButton.Text = "CLOSE MENU (RightShift)"
-    closeButton.Size = UDim2.new(0.9, 0, 0, 40)
-    closeButton.Position = UDim2.new(0.05, 0, 0.88, 0)
-    closeButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-    closeButton.TextColor3 = Color3.new(1, 1, 1)
-    closeButton.Font = Enum.Font.GothamBold
-    closeButton.TextSize = 16
-    closeButton.Parent = content
-    
-    closeButton.MouseButton1Click:Connect(function()
-        MenuVisible = false
-        menuFrame.Enabled = false
-    end)
-    
-    menuFrame.Enabled = true
-    return menuFrame
-end
-
--- FIXED: Menu toggle with Right Shift
-local function ToggleMenu()
-    MenuVisible = not MenuVisible
-    
-    if MenuVisible then
-        CreateMenu()
-    elseif menuFrame then
-        menuFrame.Enabled = false
-    end
-end
-
--- FIXED: Keybind handlers
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == MENU_KEY then
-        ToggleMenu()
-    elseif input.KeyCode == AIM_KEY then
-        AimEnabled = not AimEnabled
+-- Input handling
+Mouse.KeyDown:Connect(function(key)
+    if key == "RightShift" then
+        Frame.Visible = not Frame.Visible
     end
 end)
 
--- Initialize ESP for enemies
-for _, player in ipairs(Players:GetPlayers()) do
-    if IsEnemy(player) then
-        CreateEsp(player)
+-- Color picker handler
+ColorPicker.FocusLost:Connect(function()
+    local colors = {}
+    for val in string.gmatch(ColorPicker.Text, "%d+") do
+        table.insert(colors, tonumber(val))
     end
-end
+    
+    if #colors == 3 then
+        ESP_COLOR = Color3.fromRGB(colors[1], colors[2], colors[3])
+        updateColor()
+    end
+end)
 
-Players.PlayerAdded:Connect(function(player)
-    if IsEnemy(player) then
-        CreateEsp(player)
-    end
-end
+-- Toggle handlers
+TeamToggle.MouseButton1Click:Connect(function()
+    TEAM_CHECK = not TEAM_CHECK
+    TeamToggle.Text = TEAM_CHECK and "Team Check: ON" or "Team Check: OFF"
+end)
 
-Players.PlayerRemoving:Connect(function(player)
-    if EspObjects[player] then
-        for _, drawing in pairs(EspObjects[player]) do
-            drawing:Remove()
-        end
-        EspObjects[player] = nil
-    end
+HeadshotToggle.MouseButton1Click:Connect(function()
+    HEADSHOT_MODE = not HEADSHOT_MODE
+    HeadshotToggle.Text = HEADSHOT_MODE and "Headshot: ON" or "Headshot: OFF"
 end)
 
 -- Main loop
+initUI()
+updateColor()
+
 RunService.RenderStepped:Connect(function()
-    if AimEnabled and not MenuVisible then
-        AimAtTarget()
+    -- ESP Handling
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and not ESPBoxes[player] then
+            createESP(player)
+        end
     end
     
-    UpdateEsp()
+    updateESP()
+    
+    -- Aimbot Handling
+    if UserInputService:IsMouseButtonPressed(AIMBOT_KEY) then
+        local target = findTarget()
+        if target then
+            aimAtTarget(target)
+        end
+    end
 end)
 
-print([[
-  ____  _                      _   _       _ _      ____  _     _____ 
- |  _ \| |__   __ _ _ __   ___| | | | __ _| | |    / ___|| |   |___ / 
- | |_) | '_ \ / _` | '_ \ / _ \ |_| |/ _` | | |    \___ \| |     |_ \ 
- |  __/| | | | (_| | | | |  __/  _  | (_| | | |     ___) | |___ ___) |
- |_|   |_| |_|\__,_|_| |_|\___|_| |_|\__,_|_|_|    |____/|_____|____/ 
-]])
+-- Cleanup when player leaves
+Players.PlayerRemoving:Connect(function(player)
+    if ESPBoxes[player] then
+        ESPBoxes[player]:Remove()
+        ESPTexts[player]:Remove()
+        ESPBoxes[player] = nil
+        ESPTexts[player] = nil
+    end
+end)
 
-print("🔥 PHANTOM RIVALS v4.0 RESTORED 🔥")
-print("✅ Aimbot: Head tracking at any distance")
-print("✅ Menu: Right Shift to open/close")
-print("✅ ESP: Vibrant colors and customization")
-print("Press RIGHT SHIFT to toggle menu")
-print("Press X to toggle aimbot")
+print("Rivals Cheat Loaded! Press RightShift to toggle menu")

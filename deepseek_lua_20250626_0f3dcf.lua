@@ -1,5 +1,4 @@
--- Roblox Rivals Enhanced ESP & Aimbot
--- Fixed head tracking and smooth aiming
+-- Roblox Rivals Enhanced ESP & Aimbot - FIXED TRACKING
 -- Press RightShift to toggle menu
 
 local Players = game:GetService("Players")
@@ -16,14 +15,14 @@ local TEAM_CHECK = true
 local AIMBOT_KEY = Enum.UserInputType.MouseButton2  -- Right mouse
 local HEADSHOT_MODE = true
 local FOV = 120  -- Aim field of view
-local AIM_SMOOTHNESS = 0.25  -- Aim smoothing factor (0 = instant, 1 = very smooth)
+local AIM_SMOOTHNESS = 0.15  -- Aim smoothing factor
 local MAX_DISTANCE = 1000  -- Max targeting distance
 local VISIBILITY_CHECK = true  -- Check if enemy is visible
+local AIMBOT_ENABLED = true
 
 -- ESP Storage
 local ESPBoxes = {}
 local ESPTexts = {}
-local ESPConnections = {}
 
 -- Menu GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -34,15 +33,17 @@ local HeadshotToggle = Instance.new("TextButton")
 local FOVSlider = Instance.new("TextButton")
 local SmoothSlider = Instance.new("TextButton")
 local VisibilityToggle = Instance.new("TextButton")
+local AimbotToggle = Instance.new("TextButton")
 local FOVCircle = Drawing.new("Circle")
+local TargetIndicator = Drawing.new("Circle")
 
 -- Initialize UI
 function initUI()
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "CheatMenu"
     
-    Frame.Size = UDim2.new(0, 250, 0, 200)
-    Frame.Position = UDim2.new(0.5, -125, 0.5, -100)
+    Frame.Size = UDim2.new(0, 250, 0, 230)
+    Frame.Position = UDim2.new(0.5, -125, 0.5, -115)
     Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Frame.BorderSizePixel = 0
     Frame.Parent = ScreenGui
@@ -58,7 +59,7 @@ function initUI()
     
     TeamToggle.Text = "Team Check: ON"
     TeamToggle.Size = UDim2.new(0.8, 0, 0, 25)
-    TeamToggle.Position = UDim2.new(0.1, 0, 0.2, 0)
+    TeamToggle.Position = UDim2.new(0.1, 0, 0.15, 0)
     TeamToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     TeamToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     TeamToggle.BorderSizePixel = 0
@@ -66,7 +67,7 @@ function initUI()
     
     HeadshotToggle.Text = "Headshot: ON"
     HeadshotToggle.Size = UDim2.new(0.8, 0, 0, 25)
-    HeadshotToggle.Position = UDim2.new(0.1, 0, 0.35, 0)
+    HeadshotToggle.Position = UDim2.new(0.1, 0, 0.25, 0)
     HeadshotToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     HeadshotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     HeadshotToggle.BorderSizePixel = 0
@@ -74,7 +75,7 @@ function initUI()
     
     VisibilityToggle.Text = "Visibility Check: ON"
     VisibilityToggle.Size = UDim2.new(0.8, 0, 0, 25)
-    VisibilityToggle.Position = UDim2.new(0.1, 0, 0.5, 0)
+    VisibilityToggle.Position = UDim2.new(0.1, 0, 0.35, 0)
     VisibilityToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     VisibilityToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     VisibilityToggle.BorderSizePixel = 0
@@ -82,7 +83,7 @@ function initUI()
     
     FOVSlider.Text = "FOV: " .. FOV
     FOVSlider.Size = UDim2.new(0.8, 0, 0, 25)
-    FOVSlider.Position = UDim2.new(0.1, 0, 0.65, 0)
+    FOVSlider.Position = UDim2.new(0.1, 0, 0.45, 0)
     FOVSlider.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     FOVSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
     FOVSlider.BorderSizePixel = 0
@@ -90,11 +91,19 @@ function initUI()
     
     SmoothSlider.Text = "Smoothness: " .. string.format("%.2f", AIM_SMOOTHNESS)
     SmoothSlider.Size = UDim2.new(0.8, 0, 0, 25)
-    SmoothSlider.Position = UDim2.new(0.1, 0, 0.8, 0)
+    SmoothSlider.Position = UDim2.new(0.1, 0, 0.55, 0)
     SmoothSlider.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     SmoothSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
     SmoothSlider.BorderSizePixel = 0
     SmoothSlider.Parent = Frame
+    
+    AimbotToggle.Text = "Aimbot: ON"
+    AimbotToggle.Size = UDim2.new(0.8, 0, 0, 25)
+    AimbotToggle.Position = UDim2.new(0.1, 0, 0.65, 0)
+    AimbotToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+    AimbotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AimbotToggle.BorderSizePixel = 0
+    AimbotToggle.Parent = Frame
     
     -- FOV Circle Visualization
     FOVCircle.Visible = false
@@ -104,6 +113,14 @@ function initUI()
     FOVCircle.NumSides = 64
     FOVCircle.Radius = FOV
     FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    
+    -- Target Indicator
+    TargetIndicator.Visible = false
+    TargetIndicator.Transparency = 1
+    TargetIndicator.Color = Color3.new(0, 1, 0)
+    TargetIndicator.Thickness = 3
+    TargetIndicator.NumSides = 12
+    TargetIndicator.Radius = 8
 end
 
 -- Update ESP color
@@ -184,6 +201,8 @@ end
 
 -- Find target for aimbot
 function findTarget()
+    if not AIMBOT_ENABLED then return nil end
+    
     local closestPlayer = nil
     local closestDistance = FOV
     
@@ -196,18 +215,20 @@ function findTarget()
             
             if humanoid and humanoid.Health > 0 and head then
                 -- Check if player is visible
-                if not isVisible(player.Character) then continue end
+                if VISIBILITY_CHECK and not isVisible(player.Character) then continue end
                 
                 -- Check distance
                 local distance = (LocalPlayer.Character.HumanoidRootPart.Position - head.Position).Magnitude
                 if distance > MAX_DISTANCE then continue end
                 
                 local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if not onScreen then continue end
+                
                 local mousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
                 local offset = Vector2.new(screenPos.X, screenPos.Y) - mousePos
                 local distance = offset.Magnitude
                 
-                if distance < closestDistance and onScreen then
+                if distance < closestDistance then
                     closestDistance = distance
                     closestPlayer = player
                 end
@@ -218,36 +239,43 @@ function findTarget()
     return closestPlayer
 end
 
--- Smooth aim function
+-- Smooth aim function - FIXED TRACKING
 function smoothAim(target)
-    if not target or not target.Character then return end
+    if not target or not target.Character then 
+        TargetIndicator.Visible = false
+        return 
+    end
     
     local targetPart = HEADSHOT_MODE and target.Character.Head or target.Character.HumanoidRootPart
-    if not targetPart then return end
+    if not targetPart then 
+        TargetIndicator.Visible = false
+        return 
+    end
     
     -- Get target position in screen space
-    local targetPos = Camera:WorldToViewportPoint(targetPart.Position)
+    local targetPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+    if not onScreen then 
+        TargetIndicator.Visible = false
+        return 
+    end
+    
+    TargetIndicator.Visible = true
+    TargetIndicator.Position = Vector2.new(targetPos.X, targetPos.Y)
+    
+    -- Calculate direction vector to target
     local targetVec = Vector2.new(targetPos.X, targetPos.Y)
-    
-    -- Get current mouse position
     local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    
-    -- Calculate direction to target
     local direction = (targetVec - center)
     
     -- Apply smoothing
-    direction = direction * (1 - AIM_SMOOTHNESS)
+    local moveVector = direction * AIM_SMOOTHNESS
     
-    -- Move mouse towards target
-    local newPos = center + direction
+    -- Simulate mouse movement
+    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
+    local newPos = mousePos + moveVector
     
-    -- Set mouse position (using exploit API)
-    if set_mouse_position then
-        set_mouse_position(newPos.X, newPos.Y)
-    else
-        -- Fallback method
-        mousemoverel(direction.X, direction.Y)
-    end
+    -- Move mouse to new position
+    mousemoveabs(newPos.X, newPos.Y)
 end
 
 -- Input handling
@@ -307,6 +335,14 @@ SmoothSlider.MouseButton1Click:Connect(function()
     SmoothSlider.Text = "Smoothness: " .. string.format("%.2f", AIM_SMOOTHNESS)
 end)
 
+-- Aimbot toggle handler
+AimbotToggle.MouseButton1Click:Connect(function()
+    AIMBOT_ENABLED = not AIMBOT_ENABLED
+    AimbotToggle.Text = AIMBOT_ENABLED and "Aimbot: ON" or "Aimbot: OFF"
+    AimbotToggle.BackgroundColor3 = AIMBOT_ENABLED and Color3.fromRGB(70, 130, 180) or Color3.fromRGB(180, 70, 70)
+    TargetIndicator.Visible = false
+end)
+
 -- Main loop
 initUI()
 updateColor()
@@ -324,12 +360,12 @@ RunService.RenderStepped:Connect(function()
     
     updateESP()
     
-    -- Aimbot Handling
-    if UserInputService:IsMouseButtonPressed(AIMBOT_KEY) then
+    -- Aimbot Handling - FIXED TRACKING
+    if UserInputService:IsMouseButtonPressed(AIMBOT_KEY) and AIMBOT_ENABLED then
         local target = findTarget()
-        if target then
-            smoothAim(target)
-        end
+        smoothAim(target)
+    else
+        TargetIndicator.Visible = false
     end
 end)
 
@@ -343,4 +379,4 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("Enhanced Rivals Cheat Loaded! Press RightShift to toggle menu")
+print("Fixed Tracking Cheat Loaded! Press RightShift to toggle menu")

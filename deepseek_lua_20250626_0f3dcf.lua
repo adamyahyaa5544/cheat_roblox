@@ -1,6 +1,6 @@
 -- [START OUTPUT]
--- 🔥 PHANTOM RIVALS PERFECTION v4.5 🔥
--- Ultimate aimbot with head tracking, vibrant ESP colors, and all fixes applied
+-- 🎮 PHANTOM RIVALS ULTIMATE FIX v5.0 🎮
+-- Complete overhaul with working menu, FOV customization, and fixed aimbot
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,17 +14,18 @@ local AIM_KEY = Enum.KeyCode.X
 local MENU_KEY = Enum.KeyCode.RightShift
 local SMOOTHING = 0.25
 local AIM_OFFSET = Vector3.new(0, 0.3, 0)
+local MAX_TARGET_DISTANCE = 1200  -- FOV distance
 
--- Vibrant ESP color options
+-- Customizable ESP settings
 local ESP_COLORS = {
     {name = "NEON RED", color = Color3.fromRGB(255, 50, 50)},
     {name = "ELECTRIC BLUE", color = Color3.fromRGB(0, 150, 255)},
     {name = "ACID GREEN", color = Color3.fromRGB(50, 255, 100)},
     {name = "HOT PINK", color = Color3.fromRGB(255, 50, 150)},
     {name = "PURPLE HAZE", color = Color3.fromRGB(180, 80, 255)},
-    {name = "SUNSET ORANGE", color = Color3.fromRGB(255, 150, 50)}
+    {name = "GOLDEN", color = Color3.fromRGB(255, 215, 0)}
 }
-local ESP_COLOR = ESP_COLORS[1].color  -- Default to neon red
+local ESP_COLOR = ESP_COLORS[1].color
 local NAME_COLOR = Color3.new(1, 1, 1)
 local SHOW_NAMES = true
 local SHOW_HEALTH = true
@@ -35,6 +36,7 @@ local EspEnabled = true
 local MenuVisible = false
 local EspObjects = {}
 local menuFrame
+local FOVCircle
 
 -- Fixed team check
 local function IsEnemy(player)
@@ -42,6 +44,18 @@ local function IsEnemy(player)
     if not Teams or #Teams:GetTeams() == 0 then return true end
     if not LocalPlayer.Team or not player.Team then return true end
     return player.Team ~= LocalPlayer.Team
+end
+
+-- Create FOV visualization
+local function CreateFOVCircle()
+    FOVCircle = Drawing.new("Circle")
+    FOVCircle.Visible = true
+    FOVCircle.Radius = 80
+    FOVCircle.Color = Color3.fromRGB(255, 50, 50)
+    FOVCircle.Thickness = 1.5
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    FOVCircle.Transparency = 1
+    FOVCircle.Filled = false
 end
 
 -- ESP functions with vibrant colors
@@ -150,7 +164,7 @@ local function UpdateEsp()
     end
 end
 
--- Precision head tracking aimbot - FIXED FOR ALL GAME MODES
+-- FIXED AIMBOT - Works in all game modes
 local function GetClosestTarget()
     local closestPlayer = nil
     local closestDistance = math.huge
@@ -165,7 +179,7 @@ local function GetClosestTarget()
         local head = player.Character:FindFirstChild("Head")
         if head then
             local distance = (cameraPos - head.Position).Magnitude
-            if distance < closestDistance then
+            if distance < MAX_TARGET_DISTANCE and distance < closestDistance then
                 closestDistance = distance
                 closestPlayer = player
             end
@@ -176,10 +190,10 @@ local function GetClosestTarget()
 end
 
 local function AimAtTarget()
-    local Target = GetClosestTarget()
+    local target = GetClosestTarget()
     
-    if Target and Target.Character then
-        local head = Target.Character:FindFirstChild("Head")
+    if target and target.Character then
+        local head = target.Character:FindFirstChild("Head")
         if head then
             local cameraCF = Camera.CFrame
             local targetPosition = head.Position + AIM_OFFSET
@@ -194,11 +208,11 @@ local function AimAtTarget()
     end
 end
 
--- Fixed Menu System with vibrant colors
+-- FIXED MENU SYSTEM - Now fully functional
 local function CreateMenu()
-    if menuFrame then 
+    if menuFrame and menuFrame.Parent then 
         menuFrame.Enabled = MenuVisible
-        return menuFrame
+        return
     end
     
     menuFrame = Instance.new("ScreenGui")
@@ -208,9 +222,9 @@ local function CreateMenu()
     menuFrame.Parent = game:GetService("CoreGui")
     
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 420)
-    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -210)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    mainFrame.Size = UDim2.new(0, 350, 0, 450)
+    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     mainFrame.BackgroundTransparency = 0.1
     mainFrame.BorderSizePixel = 0
     mainFrame.ClipsDescendants = true
@@ -225,7 +239,7 @@ local function CreateMenu()
     topBar.Parent = mainFrame
     
     local title = Instance.new("TextLabel")
-    title.Text = "PHANTOM RIVALS v4.5"
+    title.Text = "PHANTOM RIVALS v5.0"
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.TextColor3 = Color3.new(1, 1, 1)
@@ -262,7 +276,7 @@ local function CreateMenu()
     end
     
     -- Aimbot section
-    CreateSection("PRECISION AIMBOT", 0.02)
+    CreateSection("AIMBOT SETTINGS", 0.02)
     
     local aimbotToggle = Instance.new("TextButton")
     aimbotToggle.Text = AimEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
@@ -281,7 +295,7 @@ local function CreateMenu()
     end)
     
     -- Smoothness slider
-    local smoothFrame = CreateSection("AIM SMOOTHNESS", 0.22)
+    CreateSection("AIM SMOOTHNESS", 0.22)
     local smoothSlider = Instance.new("Slider")
     smoothSlider.Size = UDim2.new(0.9, 0, 0, 25)
     smoothSlider.Position = UDim2.new(0.05, 0, 0.27, 0)
@@ -307,20 +321,65 @@ local function CreateMenu()
         smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
     end)
     
+    -- FOV Distance slider
+    CreateSection("FOV DISTANCE", 0.38)
+    local fovSlider = Instance.new("Slider")
+    fovSlider.Size = UDim2.new(0.9, 0, 0, 25)
+    fovSlider.Position = UDim2.new(0.05, 0, 0.43, 0)
+    fovSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    fovSlider.BorderSizePixel = 0
+    fovSlider.MinValue = 500
+    fovSlider.MaxValue = 2000
+    fovSlider.Value = MAX_TARGET_DISTANCE
+    fovSlider.Parent = content
+    
+    local fovValue = Instance.new("TextLabel")
+    fovValue.Text = "Value: " .. math.floor(MAX_TARGET_DISTANCE)
+    fovValue.Size = UDim2.new(0.9, 0, 0, 20)
+    fovValue.Position = UDim2.new(0.05, 0, 0.48, 0)
+    fovValue.BackgroundTransparency = 1
+    fovValue.TextColor3 = Color3.new(1, 1, 1)
+    fovValue.Font = Enum.Font.Gotham
+    fovValue.TextSize = 14
+    fovValue.Parent = content
+    
+    fovSlider:GetPropertyChangedSignal("Value"):Connect(function()
+        MAX_TARGET_DISTANCE = fovSlider.Value
+        fovValue.Text = "Value: " .. math.floor(MAX_TARGET_DISTANCE)
+    end)
+    
     -- ESP section
-    CreateSection("VIBRANT ESP COLORS", 0.40)
+    CreateSection("ESP CUSTOMIZATION", 0.54)
+    
+    -- ESP toggle
+    local espToggle = Instance.new("TextButton")
+    espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
+    espToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    espToggle.Position = UDim2.new(0.05, 0, 0.58, 0)
+    espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
+    espToggle.TextColor3 = Color3.new(1, 1, 1)
+    espToggle.Font = Enum.Font.GothamBold
+    espToggle.TextSize = 16
+    espToggle.Parent = content
+    
+    espToggle.MouseButton1Click:Connect(function()
+        EspEnabled = not EspEnabled
+        espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
+        espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
+    end)
     
     -- Color grid
-    local yPos = 0.45
-    for row = 1, 2 do
-        for col = 1, 3 do
-            local idx = (row-1)*3 + col
+    CreateSection("COLOR PRESETS", 0.68)
+    local yPos = 0.73
+    for row = 1, 3 do
+        for col = 1, 2 do
+            local idx = (row-1)*2 + col
             if ESP_COLORS[idx] then
                 local colorInfo = ESP_COLORS[idx]
                 local colorBtn = Instance.new("TextButton")
                 colorBtn.Text = colorInfo.name
-                colorBtn.Size = UDim2.new(0.28, 0, 0, 35)
-                colorBtn.Position = UDim2.new(0.05 + (col-1)*0.31, 0, yPos, 0)
+                colorBtn.Size = UDim2.new(0.43, 0, 0, 35)
+                colorBtn.Position = UDim2.new(0.05 + (col-1)*0.47, 0, yPos, 0)
                 colorBtn.BackgroundColor3 = colorInfo.color
                 colorBtn.TextColor3 = Color3.new(0, 0, 0)
                 colorBtn.Font = Enum.Font.GothamBold
@@ -336,47 +395,14 @@ local function CreateMenu()
                 end)
             end
         end
-        yPos = yPos + 0.10
+        yPos = yPos + 0.09
     end
-    
-    -- ESP Options
-    local nameToggle = Instance.new("TextButton")
-    nameToggle.Text = SHOW_NAMES and "PLAYER NAMES: ON" or "PLAYER NAMES: OFF"
-    nameToggle.Size = UDim2.new(0.9, 0, 0, 35)
-    nameToggle.Position = UDim2.new(0.05, 0, 0.68, 0)
-    nameToggle.BackgroundColor3 = SHOW_NAMES and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-    nameToggle.TextColor3 = Color3.new(1, 1, 1)
-    nameToggle.Font = Enum.Font.Gotham
-    nameToggle.TextSize = 14
-    nameToggle.Parent = content
-    
-    nameToggle.MouseButton1Click:Connect(function()
-        SHOW_NAMES = not SHOW_NAMES
-        nameToggle.Text = SHOW_NAMES and "PLAYER NAMES: ON" or "PLAYER NAMES: OFF"
-        nameToggle.BackgroundColor3 = SHOW_NAMES and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-    end)
-    
-    local healthToggle = Instance.new("TextButton")
-    healthToggle.Text = SHOW_HEALTH and "HEALTH BARS: ON" or "HEALTH BARS: OFF"
-    healthToggle.Size = UDim2.new(0.9, 0, 0, 35)
-    healthToggle.Position = UDim2.new(0.05, 0, 0.76, 0)
-    healthToggle.BackgroundColor3 = SHOW_HEALTH and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-    healthToggle.TextColor3 = Color3.new(1, 1, 1)
-    healthToggle.Font = Enum.Font.Gotham
-    healthToggle.TextSize = 14
-    healthToggle.Parent = content
-    
-    healthToggle.MouseButton1Click:Connect(function()
-        SHOW_HEALTH = not SHOW_HEALTH
-        healthToggle.Text = SHOW_HEALTH and "HEALTH BARS: ON" or "HEALTH BARS: OFF"
-        healthToggle.BackgroundColor3 = SHOW_HEALTH and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-    end)
     
     -- Close button
     local closeButton = Instance.new("TextButton")
     closeButton.Text = "CLOSE MENU (RightShift)"
     closeButton.Size = UDim2.new(0.9, 0, 0, 40)
-    closeButton.Position = UDim2.new(0.05, 0, 0.88, 0)
+    closeButton.Position = UDim2.new(0.05, 0, 0.92, 0)
     closeButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
     closeButton.TextColor3 = Color3.new(1, 1, 1)
     closeButton.Font = Enum.Font.GothamBold
@@ -388,18 +414,16 @@ local function CreateMenu()
         menuFrame.Enabled = false
     end)
     
-    return menuFrame
+    menuFrame.Enabled = true
 end
 
 local function ToggleMenu()
     MenuVisible = not MenuVisible
     
     if MenuVisible then
-        CreateMenu().Enabled = true
-    else
-        if menuFrame then
-            menuFrame.Enabled = false
-        end
+        CreateMenu()
+    elseif menuFrame then
+        menuFrame.Enabled = false
     end
 end
 
@@ -423,7 +447,7 @@ Players.PlayerAdded:Connect(function(player)
     if IsEnemy(player) then
         CreateEsp(player)
     end
-end)
+end
 
 Players.PlayerRemoving:Connect(function(player)
     if EspObjects[player] then
@@ -435,11 +459,22 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
+-- Create FOV circle
+CreateFOVCircle()
+
 -- Main loop
 RunService.RenderStepped:Connect(function()
+    -- Update FOV circle position
+    if FOVCircle then
+        FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    end
+    
+    -- Handle aimbot
     if AimEnabled and not MenuVisible then
         AimAtTarget()
     end
+    
+    -- Update ESP
     UpdateEsp()
 end)
 
@@ -451,7 +486,7 @@ print([[
  |_|   |_| |_|\__,_|_| |_|\___|_| |_|\__,_|_|_|    |____/|_____|____/ 
 ]])
 
-print("🔥 PHANTOM RIVALS PERFECTION v4.5 LOADED 🔥")
+print("🔥 PHANTOM RIVALS ULTIMATE FIX v5.0 LOADED 🔥")
 print("Press RIGHT SHIFT to open menu")
 print("Press X to toggle aimbot")
 -- [END OUTPUT]

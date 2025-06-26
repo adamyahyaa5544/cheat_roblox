@@ -1,7 +1,7 @@
--- [START OUTPUT]
--- 🎮 PHANTOM RIVALS ULTIMATE FIX v5.0 🎮
--- Complete overhaul with working menu, FOV customization, and fixed aimbot
+-- Full script based on the requested format
+loadstring(game:HttpGet("https://raw.githubusercontent.com/luascriptsROBLOX/Xerar/refs/heads/main/RivalsxeraPBF"))()
 
+-- Alternative complete implementation
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -14,7 +14,7 @@ local AIM_KEY = Enum.KeyCode.X
 local MENU_KEY = Enum.KeyCode.RightShift
 local SMOOTHING = 0.25
 local AIM_OFFSET = Vector3.new(0, 0.3, 0)
-local MAX_TARGET_DISTANCE = 1200  -- FOV distance
+local MAX_TARGET_DISTANCE = 1200
 
 -- Customizable ESP settings
 local ESP_COLORS = {
@@ -26,7 +26,6 @@ local ESP_COLORS = {
     {name = "GOLDEN", color = Color3.fromRGB(255, 215, 0)}
 }
 local ESP_COLOR = ESP_COLORS[1].color
-local NAME_COLOR = Color3.new(1, 1, 1)
 local SHOW_NAMES = true
 local SHOW_HEALTH = true
 
@@ -58,7 +57,7 @@ local function CreateFOVCircle()
     FOVCircle.Filled = false
 end
 
--- ESP functions with vibrant colors
+-- ESP functions
 local function CreateEsp(player)
     local Box = Drawing.new("Square")
     Box.Visible = false
@@ -68,7 +67,7 @@ local function CreateEsp(player)
     
     local NameTag = Drawing.new("Text")
     NameTag.Visible = false
-    NameTag.Color = NAME_COLOR
+    NameTag.Color = Color3.new(1, 1, 1)
     NameTag.Size = 16
     NameTag.Center = true
     NameTag.Outline = true
@@ -105,19 +104,16 @@ local function UpdateEsp()
                 local headPos, headVis = Camera:WorldToViewportPoint(head.Position)
                 
                 if rootVis then
-                    -- Calculate box dimensions
                     local height = (headPos.Y - rootPos.Y) * 2.2
                     local width = height * 0.6
                     local boxX = rootPos.X - width/2
                     local boxY = rootPos.Y - height/2
                     
-                    -- Update box
                     drawings.Box.Size = Vector2.new(width, height)
                     drawings.Box.Position = Vector2.new(boxX, boxY)
                     drawings.Box.Visible = EspEnabled
                     drawings.Box.Color = ESP_COLOR
                     
-                    -- Update name tag
                     if SHOW_NAMES then
                         local distance = (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
                         drawings.NameTag.Text = string.format("%s [%d]", player.Name, math.floor(distance))
@@ -127,7 +123,6 @@ local function UpdateEsp()
                         drawings.NameTag.Visible = false
                     end
                     
-                    -- Update health bar
                     if SHOW_HEALTH then
                         local healthPercent = humanoid.Health / humanoid.MaxHealth
                         local barHeight = height
@@ -164,7 +159,7 @@ local function UpdateEsp()
     end
 end
 
--- FIXED AIMBOT - Works in all game modes
+-- Fixed aimbot
 local function GetClosestTarget()
     local closestPlayer = nil
     local closestDistance = math.huge
@@ -198,17 +193,15 @@ local function AimAtTarget()
             local cameraCF = Camera.CFrame
             local targetPosition = head.Position + AIM_OFFSET
             
-            -- Calculate direction with smoothing
             local direction = (targetPosition - cameraCF.Position).Unit
             local newLookVector = cameraCF.LookVector:Lerp(direction, SMOOTHING)
             
-            -- Apply smoothed aim
             Camera.CFrame = CFrame.new(cameraCF.Position, cameraCF.Position + newLookVector)
         end
     end
 end
 
--- FIXED MENU SYSTEM - Now fully functional
+-- Menu system
 local function CreateMenu()
     if menuFrame and menuFrame.Parent then 
         menuFrame.Enabled = MenuVisible
@@ -230,7 +223,7 @@ local function CreateMenu()
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = menuFrame
     
-    -- Glowing top bar
+    -- Top bar
     local topBar = Instance.new("Frame")
     topBar.Size = UDim2.new(1, 0, 0, 40)
     topBar.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
@@ -239,7 +232,7 @@ local function CreateMenu()
     topBar.Parent = mainFrame
     
     local title = Instance.new("TextLabel")
-    title.Text = "PHANTOM RIVALS v5.0"
+    title.Text = "RIVALS XERA v5.0"
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.TextColor3 = Color3.new(1, 1, 1)
@@ -388,7 +381,6 @@ local function CreateMenu()
                 
                 colorBtn.MouseButton1Click:Connect(function()
                     ESP_COLOR = colorInfo.color
-                    -- Update all existing ESP boxes
                     for _, esp in pairs(EspObjects) do
                         esp.Box.Color = ESP_COLOR
                     end
@@ -451,10 +443,9 @@ end
 
 Players.PlayerRemoving:Connect(function(player)
     if EspObjects[player] then
-        EspObjects[player].Box:Remove()
-        EspObjects[player].NameTag:Remove()
-        EspObjects[player].HealthBar:Remove()
-        EspObjects[player].HealthBarBackground:Remove()
+        for _, drawing in pairs(EspObjects[player]) do
+            drawing:Remove()
+        end
         EspObjects[player] = nil
     end
 end)
@@ -464,29 +455,15 @@ CreateFOVCircle()
 
 -- Main loop
 RunService.RenderStepped:Connect(function()
-    -- Update FOV circle position
     if FOVCircle then
         FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     end
     
-    -- Handle aimbot
     if AimEnabled and not MenuVisible then
         AimAtTarget()
     end
     
-    -- Update ESP
     UpdateEsp()
 end)
 
-print([[
-  ____  _                      _   _       _ _      ____  _     _____ 
- |  _ \| |__   __ _ _ __   ___| | | | __ _| | |    / ___|| |   |___ / 
- | |_) | '_ \ / _` | '_ \ / _ \ |_| |/ _` | | |    \___ \| |     |_ \ 
- |  __/| | | | (_| | | | |  __/  _  | (_| | | |     ___) | |___ ___) |
- |_|   |_| |_|\__,_|_| |_|\___|_| |_|\__,_|_|_|    |____/|_____|____/ 
-]])
-
-print("🔥 PHANTOM RIVALS ULTIMATE FIX v5.0 LOADED 🔥")
-print("Press RIGHT SHIFT to open menu")
-print("Press X to toggle aimbot")
--- [END OUTPUT]
+print("🔥 RIVALS XERA LOADED | RIGHT SHIFT FOR MENU | X FOR AIMBOT 🔥")

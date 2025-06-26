@@ -429,7 +429,10 @@ local function ToggleMenu()
 end
 
 -- FIXED KEYBIND HANDLER - RIGHT SHIFT NOW WORKS PROPERLY
-UserInputService.InputBegan:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input, processed)
+    -- Ensure we don't process events that were already handled by other scripts
+    if processed then return end
+    
     if input.KeyCode == MENU_KEY then
         ToggleMenu()
     elseif input.KeyCode == AIM_KEY then

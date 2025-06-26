@@ -275,3 +275,176 @@ local function CreateMenu()
     
     aimbotToggle.MouseButton1Click:Connect(function()
         AimEnabled = not AimEnabled
+        aimbotToggle.Text = AimEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
+        aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
+    end)
+    
+    -- Smoothness slider
+    CreateSection("AIM SMOOTHNESS", 0.22)
+    local smoothSlider = Instance.new("Slider")
+    smoothSlider.Size = UDim2.new(0.9, 0, 0, 25)
+    smoothSlider.Position = UDim2.new(0.05, 0, 0.27, 0)
+    smoothSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    smoothSlider.BorderSizePixel = 0
+    smoothSlider.MinValue = 0.1
+    smoothSlider.MaxValue = 0.5
+    smoothSlider.Value = SMOOTHING
+    smoothSlider.Parent = content
+    
+    local smoothValue = Instance.new("TextLabel")
+    smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
+    smoothValue.Size = UDim2.new(0.9, 0, 0, 20)
+    smoothValue.Position = UDim2.new(0.05, 0, 0.32, 0)
+    smoothValue.BackgroundTransparency = 1
+    smoothValue.TextColor3 = Color3.new(1, 1, 1)
+    smoothValue.Font = Enum.Font.Gotham
+    smoothValue.TextSize = 14
+    smoothValue.Parent = content
+    
+    smoothSlider:GetPropertyChangedSignal("Value"):Connect(function()
+        SMOOTHING = smoothSlider.Value
+        smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
+    end)
+    
+    -- ESP section
+    CreateSection("ESP CUSTOMIZATION", 0.38)
+    
+    -- ESP toggle
+    local espToggle = Instance.new("TextButton")
+    espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
+    espToggle.Size = UDim2.new(0.9, 0, 0, 40)
+    espToggle.Position = UDim2.new(0.05, 0, 0.42, 0)
+    espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
+    espToggle.TextColor3 = Color3.new(1, 1, 1)
+    espToggle.Font = Enum.Font.GothamBold
+    espToggle.TextSize = 16
+    espToggle.Parent = content
+    
+    espToggle.MouseButton1Click:Connect(function()
+        EspEnabled = not EspEnabled
+        espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
+        espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
+    end)
+    
+    -- Color grid
+    CreateSection("COLOR PRESETS", 0.52)
+    local yPos = 0.57
+    for row = 1, 3 do
+        for col = 1, 2 do
+            local idx = (row-1)*2 + col
+            if ESP_COLORS[idx] then
+                local colorInfo = ESP_COLORS[idx]
+                local colorBtn = Instance.new("TextButton")
+                colorBtn.Text = colorInfo.name
+                colorBtn.Size = UDim2.new(0.43, 0, 0, 35)
+                colorBtn.Position = UDim2.new(0.05 + (col-1)*0.47, 0, yPos, 0)
+                colorBtn.BackgroundColor3 = colorInfo.color
+                colorBtn.TextColor3 = Color3.new(0, 0, 0)
+                colorBtn.Font = Enum.Font.GothamBold
+                colorBtn.TextSize = 12
+                colorBtn.Parent = content
+                
+                colorBtn.MouseButton1Click:Connect(function()
+                    ESP_COLOR = colorInfo.color
+                    for _, esp in pairs(EspObjects) do
+                        esp.Box.Color = ESP_COLOR
+                    end
+                end)
+            end
+        end
+        yPos = yPos + 0.09
+    end
+    
+    -- Close button
+    local closeButton = Instance.new("TextButton")
+    closeButton.Text = "CLOSE MENU (RightShift)"
+    closeButton.Size = UDim2.new(0.9, 0, 0, 40)
+    closeButton.Position = UDim2.new(0.05, 0, 0.88, 0)
+    closeButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+    closeButton.TextColor3 = Color3.new(1, 1, 1)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 16
+    closeButton.Parent = content
+    
+    closeButton.MouseButton1Click:Connect(function()
+        MenuVisible = false
+        menuFrame.Enabled = false
+    end)
+    
+    menuFrame.Enabled = true
+    return menuFrame
+end
+
+-- FIXED RIGHT SHIFT TOGGLE FUNCTION
+local function ToggleMenu()
+    MenuVisible = not MenuVisible
+    
+    if MenuVisible then
+        -- Create or show menu
+        local menu = CreateMenu()
+        if menu then
+            menu.Enabled = true
+        end
+    else
+        -- Hide menu
+        if menuFrame then
+            menuFrame.Enabled = false
+        end
+    end
+end
+
+-- FIXED KEYBIND HANDLER
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == MENU_KEY then
+        ToggleMenu()
+    elseif input.KeyCode == AIM_KEY then
+        AimEnabled = not AimEnabled
+    end
+end)
+
+-- Initialize ESP for enemies
+for _, player in ipairs(Players:GetPlayers()) do
+    if IsEnemy(player) then
+        CreateEsp(player)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    if IsEnemy(player) then
+        CreateEsp(player)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    if EspObjects[player] then
+        for _, drawing in pairs(EspObjects[player]) do
+            drawing:Remove()
+        end
+        EspObjects[player] = nil
+    end
+end)
+
+-- Main loop
+RunService.RenderStepped:Connect(function()
+    if AimEnabled and not MenuVisible then
+        AimAtTarget()
+    end
+    
+    UpdateEsp()
+end)
+
+-- Initialization success message
+print([[
+  ____  _                      _   _       _ _      ____  _     _____ 
+ |  _ \| |__   __ _ _ __   ___| | | | __ _| | |    / ___|| |   |___ / 
+ | |_) | '_ \ / _` | '_ \ / _ \ |_| |/ _` | | |    \___ \| |     |_ \ 
+ |  __/| | | | (_| | | | |  __/  _  | (_| | | |     ___) | |___ ___) |
+ |_|   |_| |_|\__,_|_| |_|\___|_| |_|\__,_|_|_|    |____/|_____|____/ 
+]])
+
+print("🔥 RIVALS XERA v7.0 LOADED 🔥")
+print("✅ Aimbot: Targets enemy heads at any distance")
+print("✅ Menu: Right Shift to open/close")
+print("✅ ESP: Customizable colors and settings")
+print("Press RIGHT SHIFT to toggle menu")
+print("Press X to toggle aimbot")

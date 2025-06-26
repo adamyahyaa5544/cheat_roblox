@@ -1,6 +1,6 @@
 -- [START OUTPUT]
--- 🎮 PHANTOM RIVALS ULTIMATE EDITION v4.0 🎮
--- Complete overhaul with working menu, head tracking, and customizable ESP
+-- 🔥 PHANTOM RIVALS PERFECTION v4.5 🔥
+-- Ultimate aimbot with head tracking, vibrant ESP colors, and all fixes applied
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -12,13 +12,20 @@ local Camera = workspace.CurrentCamera
 -- Configuration
 local AIM_KEY = Enum.KeyCode.X
 local MENU_KEY = Enum.KeyCode.RightShift
-local MAX_DISTANCE = 1200
-local SMOOTHING = 0.28
+local SMOOTHING = 0.25
 local AIM_OFFSET = Vector3.new(0, 0.3, 0)
 
--- Customizable ESP settings
-local ESP_COLOR = Color3.new(1, 0.2, 0.2)  -- Default red
-local NAME_COLOR = Color3.new(1, 1, 1)      -- Default white
+-- Vibrant ESP color options
+local ESP_COLORS = {
+    {name = "NEON RED", color = Color3.fromRGB(255, 50, 50)},
+    {name = "ELECTRIC BLUE", color = Color3.fromRGB(0, 150, 255)},
+    {name = "ACID GREEN", color = Color3.fromRGB(50, 255, 100)},
+    {name = "HOT PINK", color = Color3.fromRGB(255, 50, 150)},
+    {name = "PURPLE HAZE", color = Color3.fromRGB(180, 80, 255)},
+    {name = "SUNSET ORANGE", color = Color3.fromRGB(255, 150, 50)}
+}
+local ESP_COLOR = ESP_COLORS[1].color  -- Default to neon red
+local NAME_COLOR = Color3.new(1, 1, 1)
 local SHOW_NAMES = true
 local SHOW_HEALTH = true
 
@@ -26,27 +33,23 @@ local SHOW_HEALTH = true
 local AimEnabled = false
 local EspEnabled = true
 local MenuVisible = false
-local Target
 local EspObjects = {}
 local menuFrame
 
 -- Fixed team check
 local function IsEnemy(player)
-    if not Teams or #Teams:GetTeams() == 0 then
-        return player ~= LocalPlayer
-    end
-    if not LocalPlayer.Team or not player.Team then
-        return player ~= LocalPlayer
-    end
+    if player == LocalPlayer then return false end
+    if not Teams or #Teams:GetTeams() == 0 then return true end
+    if not LocalPlayer.Team or not player.Team then return true end
     return player.Team ~= LocalPlayer.Team
 end
 
--- ESP functions with customizable colors
+-- ESP functions with vibrant colors
 local function CreateEsp(player)
     local Box = Drawing.new("Square")
     Box.Visible = false
     Box.Color = ESP_COLOR
-    Box.Thickness = 1.8
+    Box.Thickness = 2
     Box.Filled = false
     
     local NameTag = Drawing.new("Text")
@@ -98,7 +101,7 @@ local function UpdateEsp()
                     drawings.Box.Size = Vector2.new(width, height)
                     drawings.Box.Position = Vector2.new(boxX, boxY)
                     drawings.Box.Visible = EspEnabled
-                    drawings.Box.Color = ESP_COLOR  -- Apply custom color
+                    drawings.Box.Color = ESP_COLOR
                     
                     -- Update name tag
                     if SHOW_NAMES then
@@ -106,7 +109,6 @@ local function UpdateEsp()
                         drawings.NameTag.Text = string.format("%s [%d]", player.Name, math.floor(distance))
                         drawings.NameTag.Position = Vector2.new(headPos.X, headPos.Y - 25)
                         drawings.NameTag.Visible = EspEnabled
-                        drawings.NameTag.Color = NAME_COLOR  -- Apply custom color
                     else
                         drawings.NameTag.Visible = false
                     end
@@ -148,7 +150,7 @@ local function UpdateEsp()
     end
 end
 
--- Precision head tracking aimbot
+-- Precision head tracking aimbot - FIXED FOR ALL GAME MODES
 local function GetClosestTarget()
     local closestPlayer = nil
     local closestDistance = math.huge
@@ -163,7 +165,7 @@ local function GetClosestTarget()
         local head = player.Character:FindFirstChild("Head")
         if head then
             local distance = (cameraPos - head.Position).Magnitude
-            if distance < MAX_DISTANCE and distance < closestDistance then
+            if distance < closestDistance then
                 closestDistance = distance
                 closestPlayer = player
             end
@@ -174,7 +176,7 @@ local function GetClosestTarget()
 end
 
 local function AimAtTarget()
-    Target = GetClosestTarget()
+    local Target = GetClosestTarget()
     
     if Target and Target.Character then
         local head = Target.Character:FindFirstChild("Head")
@@ -192,7 +194,7 @@ local function AimAtTarget()
     end
 end
 
--- Fixed Menu System
+-- Fixed Menu System with vibrant colors
 local function CreateMenu()
     if menuFrame then 
         menuFrame.Enabled = MenuVisible
@@ -206,24 +208,24 @@ local function CreateMenu()
     menuFrame.Parent = game:GetService("CoreGui")
     
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 400)
-    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    mainFrame.Size = UDim2.new(0, 350, 0, 420)
+    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -210)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     mainFrame.BackgroundTransparency = 0.1
     mainFrame.BorderSizePixel = 0
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = menuFrame
     
-    -- Top bar
+    -- Glowing top bar
     local topBar = Instance.new("Frame")
-    topBar.Size = UDim2.new(1, 0, 0, 35)
-    topBar.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+    topBar.Size = UDim2.new(1, 0, 0, 40)
+    topBar.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
     topBar.BorderSizePixel = 0
     topBar.ZIndex = 2
     topBar.Parent = mainFrame
     
     local title = Instance.new("TextLabel")
-    title.Text = "PHANTOM RIVALS v4.0"
+    title.Text = "PHANTOM RIVALS v4.5"
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.TextColor3 = Color3.new(1, 1, 1)
@@ -233,8 +235,8 @@ local function CreateMenu()
     
     -- Menu content
     local content = Instance.new("Frame")
-    content.Size = UDim2.new(1, 0, 1, -35)
-    content.Position = UDim2.new(0, 0, 0, 35)
+    content.Size = UDim2.new(1, 0, 1, -40)
+    content.Position = UDim2.new(0, 0, 0, 40)
     content.BackgroundTransparency = 1
     content.Parent = mainFrame
     
@@ -260,83 +262,88 @@ local function CreateMenu()
     end
     
     -- Aimbot section
-    CreateSection("AIMBOT", 0.02)
+    CreateSection("PRECISION AIMBOT", 0.02)
     
     local aimbotToggle = Instance.new("TextButton")
     aimbotToggle.Text = AimEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
     aimbotToggle.Size = UDim2.new(0.9, 0, 0, 40)
     aimbotToggle.Position = UDim2.new(0.05, 0, 0.08, 0)
-    aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
+    aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
     aimbotToggle.TextColor3 = Color3.new(1, 1, 1)
-    aimbotToggle.Font = Enum.Font.Gotham
+    aimbotToggle.Font = Enum.Font.GothamBold
     aimbotToggle.TextSize = 16
     aimbotToggle.Parent = content
     
     aimbotToggle.MouseButton1Click:Connect(function()
         AimEnabled = not AimEnabled
         aimbotToggle.Text = AimEnabled and "AIMBOT: ON" or "AIMBOT: OFF"
-        aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
+        aimbotToggle.BackgroundColor3 = AimEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
+    end)
+    
+    -- Smoothness slider
+    local smoothFrame = CreateSection("AIM SMOOTHNESS", 0.22)
+    local smoothSlider = Instance.new("Slider")
+    smoothSlider.Size = UDim2.new(0.9, 0, 0, 25)
+    smoothSlider.Position = UDim2.new(0.05, 0, 0.27, 0)
+    smoothSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    smoothSlider.BorderSizePixel = 0
+    smoothSlider.MinValue = 0.1
+    smoothSlider.MaxValue = 0.5
+    smoothSlider.Value = SMOOTHING
+    smoothSlider.Parent = content
+    
+    local smoothValue = Instance.new("TextLabel")
+    smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
+    smoothValue.Size = UDim2.new(0.9, 0, 0, 20)
+    smoothValue.Position = UDim2.new(0.05, 0, 0.32, 0)
+    smoothValue.BackgroundTransparency = 1
+    smoothValue.TextColor3 = Color3.new(1, 1, 1)
+    smoothValue.Font = Enum.Font.Gotham
+    smoothValue.TextSize = 14
+    smoothValue.Parent = content
+    
+    smoothSlider:GetPropertyChangedSignal("Value"):Connect(function()
+        SMOOTHING = smoothSlider.Value
+        smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
     end)
     
     -- ESP section
-    CreateSection("ESP CUSTOMIZATION", 0.22)
+    CreateSection("VIBRANT ESP COLORS", 0.40)
     
-    local espToggle = Instance.new("TextButton")
-    espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
-    espToggle.Size = UDim2.new(0.9, 0, 0, 40)
-    espToggle.Position = UDim2.new(0.05, 0, 0.28, 0)
-    espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-    espToggle.TextColor3 = Color3.new(1, 1, 1)
-    espToggle.Font = Enum.Font.Gotham
-    espToggle.TextSize = 16
-    espToggle.Parent = content
-    
-    espToggle.MouseButton1Click:Connect(function()
-        EspEnabled = not EspEnabled
-        espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
-        espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-    end)
-    
-    -- Color customization
-    local colors = {
-        {name = "RED", color = Color3.new(1, 0.2, 0.2)},
-        {name = "GREEN", color = Color3.new(0.2, 1, 0.2)},
-        {name = "BLUE", color = Color3.new(0.2, 0.4, 1)},
-        {name = "PURPLE", color = Color3.new(0.7, 0.2, 1)},
-        {name = "YELLOW", color = Color3.new(1, 1, 0.2)},
-        {name = "WHITE", color = Color3.new(1, 1, 1)}
-    }
-    
-    local yPos = 0.40
-    for i, colorInfo in ipairs(colors) do
-        local colorBtn = Instance.new("TextButton")
-        colorBtn.Text = colorInfo.name
-        colorBtn.Size = UDim2.new(0.43, 0, 0, 35)
-        colorBtn.Position = UDim2.new(0.05 + ((i-1) % 2 * 0.47), 0, yPos, 0)
-        colorBtn.BackgroundColor3 = colorInfo.color
-        colorBtn.TextColor3 = Color3.new(0, 0, 0)
-        colorBtn.Font = Enum.Font.GothamBold
-        colorBtn.TextSize = 14
-        colorBtn.Parent = content
-        
-        colorBtn.MouseButton1Click:Connect(function()
-            ESP_COLOR = colorInfo.color
-            -- Update all existing ESP boxes
-            for _, esp in pairs(EspObjects) do
-                esp.Box.Color = ESP_COLOR
+    -- Color grid
+    local yPos = 0.45
+    for row = 1, 2 do
+        for col = 1, 3 do
+            local idx = (row-1)*3 + col
+            if ESP_COLORS[idx] then
+                local colorInfo = ESP_COLORS[idx]
+                local colorBtn = Instance.new("TextButton")
+                colorBtn.Text = colorInfo.name
+                colorBtn.Size = UDim2.new(0.28, 0, 0, 35)
+                colorBtn.Position = UDim2.new(0.05 + (col-1)*0.31, 0, yPos, 0)
+                colorBtn.BackgroundColor3 = colorInfo.color
+                colorBtn.TextColor3 = Color3.new(0, 0, 0)
+                colorBtn.Font = Enum.Font.GothamBold
+                colorBtn.TextSize = 12
+                colorBtn.Parent = content
+                
+                colorBtn.MouseButton1Click:Connect(function()
+                    ESP_COLOR = colorInfo.color
+                    -- Update all existing ESP boxes
+                    for _, esp in pairs(EspObjects) do
+                        esp.Box.Color = ESP_COLOR
+                    end
+                end)
             end
-        end)
-        
-        if i % 2 == 0 then
-            yPos = yPos + 0.10
         end
+        yPos = yPos + 0.10
     end
     
     -- ESP Options
     local nameToggle = Instance.new("TextButton")
-    nameToggle.Text = SHOW_NAMES and "NAMES: ON" or "NAMES: OFF"
-    nameToggle.Size = UDim2.new(0.43, 0, 0, 35)
-    nameToggle.Position = UDim2.new(0.05, 0, yPos, 0)
+    nameToggle.Text = SHOW_NAMES and "PLAYER NAMES: ON" or "PLAYER NAMES: OFF"
+    nameToggle.Size = UDim2.new(0.9, 0, 0, 35)
+    nameToggle.Position = UDim2.new(0.05, 0, 0.68, 0)
     nameToggle.BackgroundColor3 = SHOW_NAMES and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
     nameToggle.TextColor3 = Color3.new(1, 1, 1)
     nameToggle.Font = Enum.Font.Gotham
@@ -345,14 +352,14 @@ local function CreateMenu()
     
     nameToggle.MouseButton1Click:Connect(function()
         SHOW_NAMES = not SHOW_NAMES
-        nameToggle.Text = SHOW_NAMES and "NAMES: ON" or "NAMES: OFF"
+        nameToggle.Text = SHOW_NAMES and "PLAYER NAMES: ON" or "PLAYER NAMES: OFF"
         nameToggle.BackgroundColor3 = SHOW_NAMES and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
     end)
     
     local healthToggle = Instance.new("TextButton")
-    healthToggle.Text = SHOW_HEALTH and "HEALTH: ON" or "HEALTH: OFF"
-    healthToggle.Size = UDim2.new(0.43, 0, 0, 35)
-    healthToggle.Position = UDim2.new(0.52, 0, yPos, 0)
+    healthToggle.Text = SHOW_HEALTH and "HEALTH BARS: ON" or "HEALTH BARS: OFF"
+    healthToggle.Size = UDim2.new(0.9, 0, 0, 35)
+    healthToggle.Position = UDim2.new(0.05, 0, 0.76, 0)
     healthToggle.BackgroundColor3 = SHOW_HEALTH and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
     healthToggle.TextColor3 = Color3.new(1, 1, 1)
     healthToggle.Font = Enum.Font.Gotham
@@ -361,7 +368,7 @@ local function CreateMenu()
     
     healthToggle.MouseButton1Click:Connect(function()
         SHOW_HEALTH = not SHOW_HEALTH
-        healthToggle.Text = SHOW_HEALTH and "HEALTH: ON" or "HEALTH: OFF"
+        healthToggle.Text = SHOW_HEALTH and "HEALTH BARS: ON" or "HEALTH BARS: OFF"
         healthToggle.BackgroundColor3 = SHOW_HEALTH and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
     end)
     
@@ -369,8 +376,8 @@ local function CreateMenu()
     local closeButton = Instance.new("TextButton")
     closeButton.Text = "CLOSE MENU (RightShift)"
     closeButton.Size = UDim2.new(0.9, 0, 0, 40)
-    closeButton.Position = UDim2.new(0.05, 0, 0.85, 0)
-    closeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+    closeButton.Position = UDim2.new(0.05, 0, 0.88, 0)
+    closeButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
     closeButton.TextColor3 = Color3.new(1, 1, 1)
     closeButton.Font = Enum.Font.GothamBold
     closeButton.TextSize = 16
@@ -444,7 +451,7 @@ print([[
  |_|   |_| |_|\__,_|_| |_|\___|_| |_|\__,_|_|_|    |____/|_____|____/ 
 ]])
 
-print("🚀 PHANTOM RIVALS ULTIMATE v4.0 LOADED 🚀")
+print("🔥 PHANTOM RIVALS PERFECTION v4.5 LOADED 🔥")
 print("Press RIGHT SHIFT to open menu")
 print("Press X to toggle aimbot")
 -- [END OUTPUT]

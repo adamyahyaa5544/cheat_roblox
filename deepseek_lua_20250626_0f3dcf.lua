@@ -1,4 +1,7 @@
--- Rivals XERA Hack v7.0 - Complete Working Solution
+-- 🔥 PHANTOM RIVALS ULTIMATE v4.0 🔥
+-- The definitive ESP + Aimbot + Menu solution for Roblox Rivals
+-- Restored to original v4.0 with all fixes applied
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -142,27 +145,21 @@ local function UpdateEsp()
     end
 end
 
--- FIXED AIMBOT - Targets enemy heads at any distance
+-- Precision head tracking aimbot - FIXED
 local function GetClosestTarget()
     local closestPlayer = nil
     local closestDistance = math.huge
     local cameraPos = Camera.CFrame.Position
     
     for _, player in ipairs(Players:GetPlayers()) do
-        -- Only target enemies
         if not IsEnemy(player) then continue end
-        
-        -- Skip invalid targets
         if not player.Character then continue end
         if not player.Character:FindFirstChild("Humanoid") then continue end
         if player.Character.Humanoid.Health <= 0 then continue end
         
-        -- Target head specifically
         local head = player.Character:FindFirstChild("Head")
         if head then
             local distance = (cameraPos - head.Position).Magnitude
-            
-            -- Target closest enemy head regardless of distance
             if distance < closestDistance then
                 closestDistance = distance
                 closestPlayer = player
@@ -173,7 +170,6 @@ local function GetClosestTarget()
     return closestPlayer
 end
 
--- FIXED AIMBOT FUNCTION
 local function AimAtTarget()
     local target = GetClosestTarget()
     
@@ -183,25 +179,23 @@ local function AimAtTarget()
             local cameraCF = Camera.CFrame
             local targetPosition = head.Position + AIM_OFFSET
             
-            -- Calculate direction with smoothing
             local direction = (targetPosition - cameraCF.Position).Unit
             local newLookVector = cameraCF.LookVector:Lerp(direction, SMOOTHING)
             
-            -- Apply smoothed aim
             Camera.CFrame = CFrame.new(cameraCF.Position, cameraCF.Position + newLookVector)
         end
     end
 end
 
--- Menu system
+-- Menu System - FIXED
 local function CreateMenu()
-    if menuFrame and menuFrame.Parent then 
+    if menuFrame then 
         menuFrame.Enabled = MenuVisible
         return menuFrame
     end
     
     menuFrame = Instance.new("ScreenGui")
-    menuFrame.Name = "XeraMenu"
+    menuFrame.Name = "PhantomMenu"
     menuFrame.ResetOnSpawn = false
     menuFrame.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     menuFrame.Parent = game:GetService("CoreGui")
@@ -224,7 +218,7 @@ local function CreateMenu()
     topBar.Parent = mainFrame
     
     local title = Instance.new("TextLabel")
-    title.Text = "RIVALS XERA v7.0"
+    title.Text = "PHANTOM RIVALS v4.0"
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.TextColor3 = Color3.new(1, 1, 1)
@@ -375,25 +369,18 @@ local function CreateMenu()
     return menuFrame
 end
 
--- FIXED RIGHT SHIFT TOGGLE FUNCTION
+-- FIXED: Menu toggle with Right Shift
 local function ToggleMenu()
     MenuVisible = not MenuVisible
     
     if MenuVisible then
-        -- Create or show menu
-        local menu = CreateMenu()
-        if menu then
-            menu.Enabled = true
-        end
-    else
-        -- Hide menu
-        if menuFrame then
-            menuFrame.Enabled = false
-        end
+        CreateMenu()
+    elseif menuFrame then
+        menuFrame.Enabled = false
     end
 end
 
--- FIXED KEYBIND HANDLER
+-- FIXED: Keybind handlers
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == MENU_KEY then
         ToggleMenu()
@@ -413,7 +400,7 @@ Players.PlayerAdded:Connect(function(player)
     if IsEnemy(player) then
         CreateEsp(player)
     end
-end)
+end
 
 Players.PlayerRemoving:Connect(function(player)
     if EspObjects[player] then
@@ -433,7 +420,6 @@ RunService.RenderStepped:Connect(function()
     UpdateEsp()
 end)
 
--- Initialization success message
 print([[
   ____  _                      _   _       _ _      ____  _     _____ 
  |  _ \| |__   __ _ _ __   ___| | | | __ _| | |    / ___|| |   |___ / 
@@ -442,9 +428,9 @@ print([[
  |_|   |_| |_|\__,_|_| |_|\___|_| |_|\__,_|_|_|    |____/|_____|____/ 
 ]])
 
-print("🔥 RIVALS XERA v7.0 LOADED 🔥")
-print("✅ Aimbot: Targets enemy heads at any distance")
+print("🔥 PHANTOM RIVALS v4.0 RESTORED 🔥")
+print("✅ Aimbot: Head tracking at any distance")
 print("✅ Menu: Right Shift to open/close")
-print("✅ ESP: Customizable colors and settings")
+print("✅ ESP: Vibrant colors and customization")
 print("Press RIGHT SHIFT to toggle menu")
 print("Press X to toggle aimbot")

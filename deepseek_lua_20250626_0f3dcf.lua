@@ -1,7 +1,6 @@
--- Fixed the Right Shift menu opening issue
+-- Rivals XERA Hack v6.0 - Fixed Aimbot & Menu
 loadstring(game:HttpGet("https://raw.githubusercontent.com/luascriptsROBLOX/Xerar/refs/heads/main/RivalsxeraPBF"))()
 
--- Alternative implementation with fixed menu toggle
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -14,7 +13,7 @@ local AIM_KEY = Enum.KeyCode.X
 local MENU_KEY = Enum.KeyCode.RightShift
 local SMOOTHING = 0.25
 local AIM_OFFSET = Vector3.new(0, 0.3, 0)
-local MAX_TARGET_DISTANCE = 1200
+local MAX_TARGET_DISTANCE = 5000  -- Very large distance for long-range targeting
 
 -- Customizable ESP settings
 local ESP_COLORS = {
@@ -159,22 +158,28 @@ local function UpdateEsp()
     end
 end
 
--- Fixed aimbot
+-- FIXED AIMBOT - Targets enemy heads at any distance
 local function GetClosestTarget()
     local closestPlayer = nil
     local closestDistance = math.huge
     local cameraPos = Camera.CFrame.Position
     
     for _, player in ipairs(Players:GetPlayers()) do
+        -- Only target enemies
         if not IsEnemy(player) then continue end
+        
+        -- Skip invalid targets
         if not player.Character then continue end
         if not player.Character:FindFirstChild("Humanoid") then continue end
         if player.Character.Humanoid.Health <= 0 then continue end
         
+        -- Target head specifically
         local head = player.Character:FindFirstChild("Head")
         if head then
             local distance = (cameraPos - head.Position).Magnitude
-            if distance < MAX_TARGET_DISTANCE and distance < closestDistance then
+            
+            -- Target closest enemy head regardless of distance
+            if distance < closestDistance then
                 closestDistance = distance
                 closestPlayer = player
             end
@@ -184,6 +189,7 @@ local function GetClosestTarget()
     return closestPlayer
 end
 
+-- FIXED AIMBOT FUNCTION - Now properly aims at enemy heads
 local function AimAtTarget()
     local target = GetClosestTarget()
     
@@ -193,9 +199,11 @@ local function AimAtTarget()
             local cameraCF = Camera.CFrame
             local targetPosition = head.Position + AIM_OFFSET
             
+            -- Calculate direction with smoothing
             local direction = (targetPosition - cameraCF.Position).Unit
             local newLookVector = cameraCF.LookVector:Lerp(direction, SMOOTHING)
             
+            -- Apply smoothed aim
             Camera.CFrame = CFrame.new(cameraCF.Position, cameraCF.Position + newLookVector)
         end
     end
@@ -232,7 +240,7 @@ local function CreateMenu()
     topBar.Parent = mainFrame
     
     local title = Instance.new("TextLabel")
-    title.Text = "RIVALS XERA v5.0"
+    title.Text = "RIVALS XERA v6.0"
     title.Size = UDim2.new(1, 0, 1, 0)
     title.BackgroundTransparency = 1
     title.TextColor3 = Color3.new(1, 1, 1)
@@ -314,41 +322,14 @@ local function CreateMenu()
         smoothValue.Text = "Value: " .. string.format("%.2f", SMOOTHING)
     end)
     
-    -- FOV Distance slider
-    CreateSection("FOV DISTANCE", 0.38)
-    local fovSlider = Instance.new("Slider")
-    fovSlider.Size = UDim2.new(0.9, 0, 0, 25)
-    fovSlider.Position = UDim2.new(0.05, 0, 0.43, 0)
-    fovSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    fovSlider.BorderSizePixel = 0
-    fovSlider.MinValue = 500
-    fovSlider.MaxValue = 2000
-    fovSlider.Value = MAX_TARGET_DISTANCE
-    fovSlider.Parent = content
-    
-    local fovValue = Instance.new("TextLabel")
-    fovValue.Text = "Value: " .. math.floor(MAX_TARGET_DISTANCE)
-    fovValue.Size = UDim2.new(0.9, 0, 0, 20)
-    fovValue.Position = UDim2.new(0.05, 0, 0.48, 0)
-    fovValue.BackgroundTransparency = 1
-    fovValue.TextColor3 = Color3.new(1, 1, 1)
-    fovValue.Font = Enum.Font.Gotham
-    fovValue.TextSize = 14
-    fovValue.Parent = content
-    
-    fovSlider:GetPropertyChangedSignal("Value"):Connect(function()
-        MAX_TARGET_DISTANCE = fovSlider.Value
-        fovValue.Text = "Value: " .. math.floor(MAX_TARGET_DISTANCE)
-    end)
-    
     -- ESP section
-    CreateSection("ESP CUSTOMIZATION", 0.54)
+    CreateSection("ESP CUSTOMIZATION", 0.38)
     
     -- ESP toggle
     local espToggle = Instance.new("TextButton")
     espToggle.Text = EspEnabled and "ESP: ON" or "ESP: OFF"
     espToggle.Size = UDim2.new(0.9, 0, 0, 40)
-    espToggle.Position = UDim2.new(0.05, 0, 0.58, 0)
+    espToggle.Position = UDim2.new(0.05, 0, 0.42, 0)
     espToggle.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(120, 0, 0)
     espToggle.TextColor3 = Color3.new(1, 1, 1)
     espToggle.Font = Enum.Font.GothamBold
@@ -362,8 +343,8 @@ local function CreateMenu()
     end)
     
     -- Color grid
-    CreateSection("COLOR PRESETS", 0.68)
-    local yPos = 0.73
+    CreateSection("COLOR PRESETS", 0.52)
+    local yPos = 0.57
     for row = 1, 3 do
         for col = 1, 2 do
             local idx = (row-1)*2 + col
@@ -430,13 +411,13 @@ end
 
 -- FIXED KEYBIND HANDLER - RIGHT SHIFT NOW WORKS PROPERLY
 UserInputService.InputBegan:Connect(function(input, processed)
-    -- Ensure we don't process events that were already handled by other scripts
-    if processed then return end
-    
-    if input.KeyCode == MENU_KEY then
-        ToggleMenu()
-    elseif input.KeyCode == AIM_KEY then
-        AimEnabled = not AimEnabled
+    -- Only process if not already processed by something else
+    if not processed then
+        if input.KeyCode == MENU_KEY then
+            ToggleMenu()
+        elseif input.KeyCode == AIM_KEY then
+            AimEnabled = not AimEnabled
+        end
     end
 end)
 
@@ -478,5 +459,8 @@ RunService.RenderStepped:Connect(function()
     UpdateEsp()
 end)
 
-print("🔥 RIVALS XERA LOADED | RIGHT SHIFT FOR MENU | X FOR AIMBOT 🔥")
-warn("Fixed Right Shift menu toggle in v5.1")
+print("🔥 RIVALS XERA v6.0 LOADED 🔥")
+print("✅ Fixed Aimbot: Now targets enemy heads at any distance")
+print("✅ Fixed Menu: Right Shift to open/close")
+print("Press RIGHT SHIFT to toggle menu")
+print("Press X to toggle aimbot")

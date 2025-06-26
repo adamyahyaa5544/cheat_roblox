@@ -1,5 +1,5 @@
--- Roblox Rivals Enhanced ESP & Aimbot - FIXED TRACKING
--- Press RightShift to toggle menu
+-- Roblox Rivals ESP & Aimbot - FINAL FIXED VERSION
+-- Press RightShift to toggle menu - now properly disables when menu is open
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -15,10 +15,12 @@ local TEAM_CHECK = true
 local AIMBOT_KEY = Enum.UserInputType.MouseButton2  -- Right mouse
 local HEADSHOT_MODE = true
 local FOV = 120  -- Aim field of view
-local AIM_SMOOTHNESS = 0.15  -- Aim smoothing factor
+local AIM_SMOOTHNESS = 0.2  -- Aim smoothing factor
 local MAX_DISTANCE = 1000  -- Max targeting distance
 local VISIBILITY_CHECK = true  -- Check if enemy is visible
 local AIMBOT_ENABLED = true
+local ESP_ENABLED = true
+local MENU_OPEN = false  -- Track menu state globally
 
 -- ESP Storage
 local ESPBoxes = {}
@@ -34,6 +36,7 @@ local FOVSlider = Instance.new("TextButton")
 local SmoothSlider = Instance.new("TextButton")
 local VisibilityToggle = Instance.new("TextButton")
 local AimbotToggle = Instance.new("TextButton")
+local ESPToggle = Instance.new("TextButton")
 local FOVCircle = Drawing.new("Circle")
 local TargetIndicator = Drawing.new("Circle")
 
@@ -41,13 +44,16 @@ local TargetIndicator = Drawing.new("Circle")
 function initUI()
     ScreenGui.Parent = game.CoreGui
     ScreenGui.Name = "CheatMenu"
+    ScreenGui.ResetOnSpawn = false
     
-    Frame.Size = UDim2.new(0, 250, 0, 230)
-    Frame.Position = UDim2.new(0.5, -125, 0.5, -115)
+    Frame.Size = UDim2.new(0, 250, 0, 250)
+    Frame.Position = UDim2.new(0.5, -125, 0.5, -125)
     Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Frame.BorderSizePixel = 0
     Frame.Parent = ScreenGui
     Frame.Visible = false
+    Frame.Active = true
+    Frame.Draggable = true
     
     ColorPicker.PlaceholderText = "ESP Color (R,G,B)"
     ColorPicker.Size = UDim2.new(0.8, 0, 0, 25)
@@ -59,7 +65,7 @@ function initUI()
     
     TeamToggle.Text = "Team Check: ON"
     TeamToggle.Size = UDim2.new(0.8, 0, 0, 25)
-    TeamToggle.Position = UDim2.new(0.1, 0, 0.15, 0)
+    TeamToggle.Position = UDim2.new(0.1, 0, 0.14, 0)
     TeamToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     TeamToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     TeamToggle.BorderSizePixel = 0
@@ -67,7 +73,7 @@ function initUI()
     
     HeadshotToggle.Text = "Headshot: ON"
     HeadshotToggle.Size = UDim2.new(0.8, 0, 0, 25)
-    HeadshotToggle.Position = UDim2.new(0.1, 0, 0.25, 0)
+    HeadshotToggle.Position = UDim2.new(0.1, 0, 0.23, 0)
     HeadshotToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     HeadshotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     HeadshotToggle.BorderSizePixel = 0
@@ -75,7 +81,7 @@ function initUI()
     
     VisibilityToggle.Text = "Visibility Check: ON"
     VisibilityToggle.Size = UDim2.new(0.8, 0, 0, 25)
-    VisibilityToggle.Position = UDim2.new(0.1, 0, 0.35, 0)
+    VisibilityToggle.Position = UDim2.new(0.1, 0, 0.32, 0)
     VisibilityToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     VisibilityToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     VisibilityToggle.BorderSizePixel = 0
@@ -83,7 +89,7 @@ function initUI()
     
     FOVSlider.Text = "FOV: " .. FOV
     FOVSlider.Size = UDim2.new(0.8, 0, 0, 25)
-    FOVSlider.Position = UDim2.new(0.1, 0, 0.45, 0)
+    FOVSlider.Position = UDim2.new(0.1, 0, 0.41, 0)
     FOVSlider.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     FOVSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
     FOVSlider.BorderSizePixel = 0
@@ -91,7 +97,7 @@ function initUI()
     
     SmoothSlider.Text = "Smoothness: " .. string.format("%.2f", AIM_SMOOTHNESS)
     SmoothSlider.Size = UDim2.new(0.8, 0, 0, 25)
-    SmoothSlider.Position = UDim2.new(0.1, 0, 0.55, 0)
+    SmoothSlider.Position = UDim2.new(0.1, 0, 0.50, 0)
     SmoothSlider.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     SmoothSlider.TextColor3 = Color3.fromRGB(255, 255, 255)
     SmoothSlider.BorderSizePixel = 0
@@ -99,11 +105,19 @@ function initUI()
     
     AimbotToggle.Text = "Aimbot: ON"
     AimbotToggle.Size = UDim2.new(0.8, 0, 0, 25)
-    AimbotToggle.Position = UDim2.new(0.1, 0, 0.65, 0)
+    AimbotToggle.Position = UDim2.new(0.1, 0, 0.59, 0)
     AimbotToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
     AimbotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     AimbotToggle.BorderSizePixel = 0
     AimbotToggle.Parent = Frame
+    
+    ESPToggle.Text = "ESP: ON"
+    ESPToggle.Size = UDim2.new(0.8, 0, 0, 25)
+    ESPToggle.Position = UDim2.new(0.1, 0, 0.68, 0)
+    ESPToggle.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+    ESPToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ESPToggle.BorderSizePixel = 0
+    ESPToggle.Parent = Frame
     
     -- FOV Circle Visualization
     FOVCircle.Visible = false
@@ -150,6 +164,8 @@ end
 
 -- Update ESP
 function updateESP()
+    if not ESP_ENABLED or MENU_OPEN then return end
+    
     for player, box in pairs(ESPBoxes) do
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local rootPart = player.Character.HumanoidRootPart
@@ -201,36 +217,42 @@ end
 
 -- Find target for aimbot
 function findTarget()
-    if not AIMBOT_ENABLED then return nil end
+    if not AIMBOT_ENABLED or MENU_OPEN then return nil end
     
     local closestPlayer = nil
     local closestDistance = FOV
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            if TEAM_CHECK and player.Team == LocalPlayer.Team then continue end
-            
-            local humanoid = player.Character:FindFirstChild("Humanoid")
-            local head = player.Character:FindFirstChild("Head")
-            
-            if humanoid and humanoid.Health > 0 and head then
-                -- Check if player is visible
-                if VISIBILITY_CHECK and not isVisible(player.Character) then continue end
+            if TEAM_CHECK and player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+                -- Skip teammates
+            else
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                local head = player.Character:FindFirstChild("Head")
                 
-                -- Check distance
-                local distance = (LocalPlayer.Character.HumanoidRootPart.Position - head.Position).Magnitude
-                if distance > MAX_DISTANCE then continue end
-                
-                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if not onScreen then continue end
-                
-                local mousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-                local offset = Vector2.new(screenPos.X, screenPos.Y) - mousePos
-                local distance = offset.Magnitude
-                
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestPlayer = player
+                if humanoid and humanoid.Health > 0 and head then
+                    -- Check if player is visible
+                    if VISIBILITY_CHECK and not isVisible(player.Character) then
+                        -- Skip if not visible
+                    else
+                        -- Check distance
+                        local distance = (LocalPlayer.Character.HumanoidRootPart.Position - head.Position).Magnitude
+                        if distance > MAX_DISTANCE then
+                            -- Skip if too far
+                        else
+                            local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                            if onScreen then
+                                local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+                                local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
+                                local distance = (screenPoint - center).Magnitude
+                                
+                                if distance < closestDistance then
+                                    closestDistance = distance
+                                    closestPlayer = player
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -239,9 +261,9 @@ function findTarget()
     return closestPlayer
 end
 
--- Smooth aim function - FIXED TRACKING
+-- Smooth aim function - FINALLY WORKING!
 function smoothAim(target)
-    if not target or not target.Character then 
+    if not target or not target.Character or MENU_OPEN then 
         TargetIndicator.Visible = false
         return 
     end
@@ -252,37 +274,35 @@ function smoothAim(target)
         return 
     end
     
-    -- Get target position in screen space
-    local targetPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-    if not onScreen then 
-        TargetIndicator.Visible = false
-        return 
-    end
+    -- Get target position in world space
+    local targetPos = targetPart.Position
     
-    TargetIndicator.Visible = true
-    TargetIndicator.Position = Vector2.new(targetPos.X, targetPos.Y)
+    -- Calculate direction
+    local cameraPos = Camera.CFrame.Position
+    local direction = (targetPos - cameraPos).Unit
     
-    -- Calculate direction vector to target
-    local targetVec = Vector2.new(targetPos.X, targetPos.Y)
-    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    local direction = (targetVec - center)
+    -- Create new CFrame looking at target
+    local newCFrame = CFrame.new(cameraPos, cameraPos + direction)
     
     -- Apply smoothing
-    local moveVector = direction * AIM_SMOOTHNESS
+    Camera.CFrame = Camera.CFrame:Lerp(newCFrame, AIM_SMOOTHNESS)
     
-    -- Simulate mouse movement
-    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-    local newPos = mousePos + moveVector
-    
-    -- Move mouse to new position
-    mousemoveabs(newPos.X, newPos.Y)
+    -- Update target indicator
+    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPos)
+    if onScreen then
+        TargetIndicator.Visible = true
+        TargetIndicator.Position = Vector2.new(screenPos.X, screenPos.Y)
+    else
+        TargetIndicator.Visible = false
+    end
 end
 
 -- Input handling
 UserInputService.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.RightShift then
-        Frame.Visible = not Frame.Visible
-        FOVCircle.Visible = Frame.Visible
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        MENU_OPEN = not Frame.Visible
+        Frame.Visible = MENU_OPEN
+        FOVCircle.Visible = MENU_OPEN
     end
 end)
 
@@ -343,6 +363,23 @@ AimbotToggle.MouseButton1Click:Connect(function()
     TargetIndicator.Visible = false
 end)
 
+-- ESP toggle handler
+ESPToggle.MouseButton1Click:Connect(function()
+    ESP_ENABLED = not ESP_ENABLED
+    ESPToggle.Text = ESP_ENABLED and "ESP: ON" or "ESP: OFF"
+    ESPToggle.BackgroundColor3 = ESP_ENABLED and Color3.fromRGB(70, 130, 180) or Color3.fromRGB(180, 70, 70)
+    
+    -- Clear ESP when disabled
+    if not ESP_ENABLED then
+        for player, box in pairs(ESPBoxes) do
+            box.Visible = false
+            if ESPTexts[player] then
+                ESPTexts[player].Visible = false
+            end
+        end
+    end
+end)
+
 -- Main loop
 initUI()
 updateColor()
@@ -360,10 +397,14 @@ RunService.RenderStepped:Connect(function()
     
     updateESP()
     
-    -- Aimbot Handling - FIXED TRACKING
-    if UserInputService:IsMouseButtonPressed(AIMBOT_KEY) and AIMBOT_ENABLED then
+    -- Aimbot Handling - FINALLY WORKING PROPERLY!
+    if UserInputService:IsMouseButtonPressed(AIMBOT_KEY) and AIMBOT_ENABLED and not MENU_OPEN then
         local target = findTarget()
-        smoothAim(target)
+        if target then
+            smoothAim(target)
+        else
+            TargetIndicator.Visible = false
+        end
     else
         TargetIndicator.Visible = false
     end
@@ -379,4 +420,4 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("Fixed Tracking Cheat Loaded! Press RightShift to toggle menu")
+print("ULTIMATE FIXED CHEAT LOADED! Press RightShift to toggle menu")

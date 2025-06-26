@@ -1,5 +1,5 @@
 -- Rivals XERA Hack v6.0 - Fixed Aimbot & Menu
-loadstring(game:HttpGet("https://raw.githubusercontent.com/luascriptsROBLOX/Xerar/refs/heads/main/RivalsxeraPBF"))()
+
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")

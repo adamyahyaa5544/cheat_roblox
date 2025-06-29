@@ -1,5 +1,3 @@
-=-- Final Rivals Script: ESP + Improved Live Aimbot + Draggable Menu (RightShift toggle)
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,33 +11,61 @@ local menuVisible = false
 
 local Drawing = Drawing
 
--- Dragging variables
+-- Dragging vars
 local dragging = false
 local dragStartPos = Vector2.new(0,0)
-local menuStartPos = Vector2.new(10,10)
+local menuStartPos = Vector2.new(50,50) -- بداية مكان القائمة
 
 local UI = {}
 
--- Helper: create button
+-- زر مع تأثير hover وجميل
 local function createButton(pos, size, text)
     local bg = Drawing.new("Square")
     bg.Position = pos
     bg.Size = size
     bg.Filled = true
-    bg.Color = Color3.fromRGB(50, 50, 50)
+    bg.Color = Color3.fromRGB(30, 30, 30)
     bg.Transparency = 0.85
     bg.Visible = false
     bg.ZIndex = 10
 
     local txt = Drawing.new("Text")
     txt.Position = Vector2.new(pos.X + size.X/2, pos.Y + size.Y/2 - 8)
-    txt.Size = 20
+    txt.Size = 22
     txt.Center = true
-    txt.Color = Color3.fromRGB(220, 220, 220)
+    txt.Color = Color3.fromRGB(200, 200, 200)
     txt.Outline = true
+    txt.OutlineColor = Color3.fromRGB(10,10,10)
     txt.Text = text
     txt.Visible = false
     txt.ZIndex = 11
+
+    local hovered = false
+
+    -- تحديث لون الزر حسب الحالة (on/off) و hover
+    local function updateColor()
+        if hovered then
+            bg.Color = Color3.fromRGB(70, 130, 180) -- أزرق عند hover
+            txt.Color = Color3.fromRGB(245, 245, 245)
+        else
+            if text:find("ON") then
+                bg.Color = Color3.fromRGB(34, 139, 34) -- أخضر تفعيل
+                txt.Color = Color3.fromRGB(240, 240, 240)
+            else
+                bg.Color = Color3.fromRGB(100, 100, 100) -- رمادي إيقاف
+                txt.Color = Color3.fromRGB(200, 200, 200)
+            end
+        end
+    end
+
+    bg.MouseEnter = function()
+        hovered = true
+        updateColor()
+    end
+    bg.MouseLeave = function()
+        hovered = false
+        updateColor()
+    end
 
     return {
         bg = bg,
@@ -47,6 +73,7 @@ local function createButton(pos, size, text)
         pos = pos,
         size = size,
         text = text,
+        updateColor = updateColor,
         setVisible = function(self, visible)
             self.bg.Visible = visible
             self.txt.Visible = visible
@@ -62,45 +89,59 @@ local function createButton(pos, size, text)
         setText = function(self, newText)
             self.text = newText
             self.txt.Text = newText
+            self:updateColor()
         end,
     }
 end
 
--- Menu UI
+-- القائمة
 UI.menuBox = Drawing.new("Square")
 UI.menuBox.Position = menuStartPos
-UI.menuBox.Size = Vector2.new(260, 160)
+UI.menuBox.Size = Vector2.new(280, 170)
 UI.menuBox.Filled = true
-UI.menuBox.Color = Color3.fromRGB(20, 20, 20)
-UI.menuBox.Transparency = 0.9
+UI.menuBox.Color = Color3.fromRGB(15, 15, 15)
+UI.menuBox.Transparency = 0.92
 UI.menuBox.Visible = false
+UI.menuBox.ZIndex = 9
+
+-- ظل خفيف على القائمة
+UI.menuShadow = Drawing.new("Square")
+UI.menuShadow.Position = Vector2.new(menuStartPos.X + 5, menuStartPos.Y + 5)
+UI.menuShadow.Size = Vector2.new(280, 170)
+UI.menuShadow.Filled = true
+UI.menuShadow.Color = Color3.fromRGB(0, 0, 0)
+UI.menuShadow.Transparency = 0.6
+UI.menuShadow.Visible = false
+UI.menuShadow.ZIndex = 8
 
 UI.titleText = Drawing.new("Text")
-UI.titleText.Position = Vector2.new(menuStartPos.X + 10, menuStartPos.Y + 15)
-UI.titleText.Size = 24
+UI.titleText.Position = Vector2.new(menuStartPos.X + 15, menuStartPos.Y + 18)
+UI.titleText.Size = 28
 UI.titleText.Color = Color3.fromRGB(135, 206, 250)
 UI.titleText.Outline = true
+UI.titleText.OutlineColor = Color3.fromRGB(20,20,20)
 UI.titleText.Text = "Rivals Script Menu"
 UI.titleText.Visible = false
+UI.titleText.ZIndex = 10
 
-UI.espButton = createButton(Vector2.new(menuStartPos.X + 20, menuStartPos.Y + 60), Vector2.new(100, 40), "ESP: OFF")
-UI.aimbotButton = createButton(Vector2.new(menuStartPos.X + 140, menuStartPos.Y + 60), Vector2.new(100, 40), "Aimbot: OFF")
+UI.espButton = createButton(Vector2.new(menuStartPos.X + 30, menuStartPos.Y + 70), Vector2.new(110, 45), "ESP: OFF")
+UI.aimbotButton = createButton(Vector2.new(menuStartPos.X + 140, menuStartPos.Y + 70), Vector2.new(110, 45), "Aimbot: OFF")
 
 local function updateUI()
     UI.espButton:setText(espEnabled and "ESP: ON" or "ESP: OFF")
-    UI.espButton.bg.Color = espEnabled and Color3.fromRGB(34, 139, 34) or Color3.fromRGB(178, 34, 34)
     UI.aimbotButton:setText(aimbotEnabled and "Aimbot: ON" or "Aimbot: OFF")
-    UI.aimbotButton.bg.Color = aimbotEnabled and Color3.fromRGB(34, 139, 34) or Color3.fromRGB(178, 34, 34)
 end
 
 local function setMenuVisible(visible)
     UI.menuBox.Visible = visible
+    UI.menuShadow.Visible = visible
     UI.titleText.Visible = visible
     UI.espButton:setVisible(visible)
     UI.aimbotButton:setVisible(visible)
     menuVisible = visible
 end
 
+-- التعامل مع المدخلات
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
@@ -108,7 +149,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     elseif input.UserInputType == Enum.UserInputType.MouseButton1 and menuVisible then
         local mousePos = UserInputService:GetMouseLocation()
         local titleBar = UI.menuBox.Position
-        if mousePos.X >= titleBar.X and mousePos.X <= titleBar.X + 260 and mousePos.Y >= titleBar.Y and mousePos.Y <= titleBar.Y + 30 then
+        -- سحب القائمة عند الضغط على شريط العنوان
+        if mousePos.X >= titleBar.X and mousePos.X <= titleBar.X + UI.menuBox.Size.X and mousePos.Y >= titleBar.Y and mousePos.Y <= titleBar.Y + 35 then
             dragging = true
             dragStartPos = mousePos - menuStartPos
         elseif UI.espButton:isMouseOver(mousePos) then
@@ -126,9 +168,10 @@ UserInputService.InputChanged:Connect(function(input)
         local newPos = UserInputService:GetMouseLocation() - dragStartPos
         menuStartPos = newPos
         UI.menuBox.Position = newPos
-        UI.titleText.Position = Vector2.new(newPos.X + 10, newPos.Y + 15)
-        UI.espButton:setPosition(Vector2.new(newPos.X + 20, newPos.Y + 60))
-        UI.aimbotButton:setPosition(Vector2.new(newPos.X + 140, newPos.Y + 60))
+        UI.menuShadow.Position = Vector2.new(newPos.X + 5, newPos.Y + 5)
+        UI.titleText.Position = Vector2.new(newPos.X + 15, newPos.Y + 18)
+        UI.espButton:setPosition(Vector2.new(newPos.X + 30, newPos.Y + 70))
+        UI.aimbotButton:setPosition(Vector2.new(newPos.X + 140, newPos.Y + 70))
     end
 end)
 
@@ -146,9 +189,11 @@ end)
 local espBoxes = {}
 
 RunService.RenderStepped:Connect(function(delta)
+    -- إزالة الصناديق القديمة
     for _, box in ipairs(espBoxes) do box.Visible = false box:Remove() end
     espBoxes = {}
 
+    -- رسم ESP
     if espEnabled then
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
@@ -159,7 +204,7 @@ RunService.RenderStepped:Connect(function(delta)
                         local box = Drawing.new("Square")
                         box.Size = Vector2.new(60, 80)
                         box.Position = Vector2.new(pos.X - 30, pos.Y - 40)
-                        box.Color = Color3.fromRGB(255, 0, 0)
+                        box.Color = Color3.fromRGB(255, 50, 50)
                         box.Thickness = 2
                         box.Filled = false
                         box.Visible = true
@@ -170,6 +215,7 @@ RunService.RenderStepped:Connect(function(delta)
         end
     end
 
+    -- أيمبوت متحرك يتبع أقرب هدف للماوس
     if aimbotEnabled and aiming then
         local closest, shortest = nil, math.huge
         local mousePos = UserInputService:GetMouseLocation()

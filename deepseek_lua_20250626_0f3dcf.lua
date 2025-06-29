@@ -188,6 +188,30 @@ end)
 
 local espBoxes = {}
 
+-- دالة للحصول على أقرب هدف إلى مركز الشاشة (Head or HumanoidRootPart)
+local function getClosestTarget()
+    local closest = nil
+    local shortestDistance = math.huge
+    local centerScreen = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local targetPart = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
+            if targetPart then
+                local screenPos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
+                if onScreen then
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - centerScreen).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        closest = targetPart
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
 RunService.RenderStepped:Connect(function(delta)
     -- إزالة الصناديق القديمة
     for _, box in ipairs(espBoxes) do box.Visible = false box:Remove() end
@@ -215,32 +239,13 @@ RunService.RenderStepped:Connect(function(delta)
         end
     end
 
-    -- أيمبوت متحرك يتبع أقرب هدف للماوس
+    -- أيمبوت متحرك يتبع أقرب هدف إلى مركز الشاشة أثناء الضغط بالزر الأيمن
     if aimbotEnabled and aiming then
-        local closest, shortest = nil, math.huge
-        local mousePos = UserInputService:GetMouseLocation()
-
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                local head = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
-                if head then
-                    local pos, onScreen = camera:WorldToViewportPoint(head.Position)
-                    if onScreen then
-                        local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-                        if dist < shortest then
-                            shortest = dist
-                            closest = head
-                        end
-                    end
-                end
-            end
-        end
-
-        if closest then
-            local current = camera.CFrame
-            local targetPos = closest.Position
-            local newCFrame = CFrame.new(current.Position, targetPos)
-            camera.CFrame = current:Lerp(newCFrame, math.clamp(delta * 10, 0, 1))
+        local target = getClosestTarget()
+        if target and target.Parent and target.Parent:FindFirstChild("Humanoid") and target.Parent.Humanoid.Health > 0 then
+            local currentCFrame = camera.CFrame
+            local targetCFrame = CFrame.new(currentCFrame.Position, target.Position)
+            camera.CFrame = currentCFrame:Lerp(targetCFrame, math.clamp(delta * 15, 0, 1))
         end
     end
 end)

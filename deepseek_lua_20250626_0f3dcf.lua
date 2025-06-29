@@ -1,4 +1,4 @@
--- Final Rivals Script: ESP + Aimbot + Smooth Aim + Draggable Menu (RightShift toggle)
+-- Final Rivals Script: ESP + BEST Aimbot + Smooth Aim + Draggable Menu (RightShift toggle)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -150,7 +150,6 @@ end)
 local espBoxes = {}
 
 RunService.RenderStepped:Connect(function(delta)
-    -- ESP
     for _, box in ipairs(espBoxes) do box.Visible = false box:Remove() end
     espBoxes = {}
 
@@ -175,34 +174,28 @@ RunService.RenderStepped:Connect(function(delta)
         end
     end
 
-    -- Aimbot
     if aimbotEnabled and aiming then
-        local closest = nil
-        local shortest = math.huge
-        local mousePos = UserInputService:GetMouseLocation()
+        local closestPart = nil
+        local shortestDist = math.huge
 
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                local part = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
-                if part then
-                    local pos, onScreen = camera:WorldToViewportPoint(part.Position)
-                    if onScreen then
-                        local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-                        if dist < shortest then
-                            shortest = dist
-                            closest = part
-                        end
+                local target = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
+                if target then
+                    local dist = (target.Position - camera.CFrame.Position).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        closestPart = target
                     end
                 end
             end
         end
 
-        if closest then
+        if closestPart then
             local current = camera.CFrame
-            local desired = CFrame.new(current.Position, closest.Position)
-            local angle = math.acos(current.LookVector:Dot((closest.Position - current.Position).Unit))
-            local speed = math.clamp(angle * 10, 0.05, 1)
-            camera.CFrame = current:Lerp(desired, speed * delta * 60)
+            local targetPos = closestPart.Position
+            local newCFrame = CFrame.new(current.Position, targetPos)
+            camera.CFrame = current:Lerp(newCFrame, math.clamp(delta * 12, 0, 1))
         end
     end
 end)

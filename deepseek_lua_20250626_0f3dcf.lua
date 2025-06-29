@@ -1,4 +1,4 @@
--- Final Rivals Script: ESP + Smooth Aimbot (no zigzag) + Draggable Menu (RightShift toggle)
+=-- Final Rivals Script: ESP + Improved Live Aimbot + Draggable Menu (RightShift toggle)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -9,7 +9,6 @@ local localPlayer = Players.LocalPlayer
 local aimbotEnabled = false
 local espEnabled = false
 local aiming = false
-local lockedTarget = nil
 local menuVisible = false
 
 local Drawing = Drawing
@@ -135,37 +134,12 @@ end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then aiming = false end
 end)
 
 UserInputService.InputBegan:Connect(function(input)
     if aimbotEnabled and input.UserInputType == Enum.UserInputType.MouseButton2 then
         aiming = true
-        local closest, shortest = nil, math.huge
-        local mousePos = UserInputService:GetMouseLocation()
-
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-                local head = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
-                if head then
-                    local pos, onScreen = camera:WorldToViewportPoint(head.Position)
-                    if onScreen then
-                        local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-                        if dist < shortest then
-                            shortest = dist
-                            closest = head
-                        end
-                    end
-                end
-            end
-        end
-        lockedTarget = closest
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        aiming = false
-        lockedTarget = nil
     end
 end)
 
@@ -196,14 +170,31 @@ RunService.RenderStepped:Connect(function(delta)
         end
     end
 
-    if aimbotEnabled and aiming and lockedTarget then
-        if lockedTarget.Parent and lockedTarget.Parent:FindFirstChild("Humanoid") and lockedTarget.Parent.Humanoid.Health > 0 then
+    if aimbotEnabled and aiming then
+        local closest, shortest = nil, math.huge
+        local mousePos = UserInputService:GetMouseLocation()
+
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+                local head = player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
+                if head then
+                    local pos, onScreen = camera:WorldToViewportPoint(head.Position)
+                    if onScreen then
+                        local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+                        if dist < shortest then
+                            shortest = dist
+                            closest = head
+                        end
+                    end
+                end
+            end
+        end
+
+        if closest then
             local current = camera.CFrame
-            local targetPos = lockedTarget.Position
+            local targetPos = closest.Position
             local newCFrame = CFrame.new(current.Position, targetPos)
-            camera.CFrame = current:Lerp(newCFrame, math.clamp(delta * 8, 0, 1))
-        else
-            lockedTarget = nil
+            camera.CFrame = current:Lerp(newCFrame, math.clamp(delta * 10, 0, 1))
         end
     end
 end)
